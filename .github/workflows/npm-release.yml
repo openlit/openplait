@@ -1,7 +1,14 @@
 name: Publish Package to npmjs
 
-# Mirrors OpenLIT sdk/typescript npm-release.yml (tag-driven + workflow_dispatch).
-# Tag pattern: ts-*.*.* (same as OpenLIT). Workspace root: typescript/
+# Trusted publishing (OIDC) — no long-lived NPM_TOKEN.
+# https://docs.npmjs.com/trusted-publishers
+#
+# Tag pattern: ts-*.*.*  ·  Workspace root: typescript/
+# Configure each @openplait/* package on npmjs.com → Settings → Trusted Publisher:
+#   Organization: openlit
+#   Repository:   openplait
+#   Workflow:     npm-release.yml
+#   Allowed:      npm publish
 
 on:
   workflow_dispatch:
@@ -14,7 +21,8 @@ on:
     tags: ['ts-*.*.*']
 
 permissions:
-  contents: write
+  id-token: write # Required for OIDC
+  contents: read
 
 jobs:
   publish:
@@ -22,10 +30,6 @@ jobs:
     defaults:
       run:
         working-directory: typescript
-
-    permissions:
-      contents: read
-      id-token: write
 
     steps:
       - uses: actions/checkout@v6
@@ -44,13 +48,13 @@ jobs:
           echo "✓ Version validation passed"
 
       - uses: actions/setup-node@v6
-        name: Setup .npmrc file to publish to npm
+        name: Setup Node for trusted publish
         with:
-          node-version: '20.19'
-          cache: 'npm'
+          # Trusted publishing requires Node >= 22.14 and npm >= 11.5.1
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           scope: '@openplait'
-          cache-dependency-path: typescript/package-lock.json
+          package-manager-cache: false
 
       - name: Install dependencies
         run: npm ci
@@ -61,12 +65,14 @@ jobs:
       - name: Build packages
         run: npm run build
 
+      # OIDC auth — do not set NODE_AUTH_TOKEN (it overrides trusted publishing).
+      # Provenance is generated automatically with trusted publishing.
       - name: Publish packages (dependency order)
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           DIST_TAG: ${{ github.event.inputs.tag || 'alpha' }}
         run: |
           set -euo pipefail
+          npm --version
           for pkg in \
             @openplait/core \
             @openplait/adapter-sdk \
@@ -79,5 +85,5 @@ jobs:
             @openplait/perses
           do
             echo "Publishing $pkg with tag $DIST_TAG"
-            npm publish -w "$pkg" --access public --tag "$DIST_TAG" --provenance
+            npm publish -w "$pkg" --access public --tag "$DIST_TAG"
           done

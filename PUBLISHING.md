@@ -3,11 +3,11 @@
 **Repository:** [openlit/openplait](https://github.com/openlit/openplait)  
 **Clone:** `git clone git@github.com:openlit/openplait.git`
 
-OpenPlait ships two language tracks. Release mechanics mirror **OpenLIT**:
+OpenPlait ships two language tracks:
 
-| Track | Sources | Packages | Tag (like OpenLIT) | Workflow | Secret |
+| Track | Sources | Packages | Tag | Workflow | Auth |
 | --- | --- | --- | --- | --- | --- |
-| TypeScript | [`typescript/`](./typescript) | `@openplait/*` on npm | `ts-*.*.*` (same as OpenLIT) | [`.github/workflows/npm-release.yml`](./.github/workflows/npm-release.yml) | `NPM_TOKEN` |
+| TypeScript | [`typescript/`](./typescript) | `@openplait/*` on npm | `ts-*.*.*` | [`.github/workflows/npm-release.yml`](./.github/workflows/npm-release.yml) | [Trusted publishing (OIDC)](https://docs.npmjs.com/trusted-publishers) — no `NPM_TOKEN` |
 | Python | [`python/`](./python) | `openplait` on PyPI | `py-*.*.*` | [`.github/workflows/pypi-release.yml`](./.github/workflows/pypi-release.yml) | `PYPI_API_TOKEN` |
 
 Current TypeScript line: **`0.1.0-alpha.0`** (npm dist-tag `alpha`).  
@@ -42,12 +42,24 @@ Each publishable package under `typescript/packages/<name>` includes:
 - `"engines": { "node": ">=20.19" }`
 - `repository.directory` → `typescript/packages/<name>`
 
-### One-time npm org setup
+### One-time npm trusted publisher setup
+
+Follow [Trusted publishing](https://docs.npmjs.com/trusted-publishers). Requires
+**Node ≥ 22.14** and **npm ≥ 11.5.1** in CI (the workflow uses Node 24).
 
 1. Create / claim the **`@openplait`** org on [npmjs.com](https://www.npmjs.com/).
-2. Create an automation token with publish rights.
-3. Store it as GitHub Actions secret **`NPM_TOKEN`**.
-4. Ensure the workflow has `id-token: write` for `--provenance`.
+2. For **each** `@openplait/*` package → **Settings → Trusted Publisher → GitHub Actions**:
+   - **Organization or user:** `openlit`
+   - **Repository:** `openplait`
+   - **Workflow filename:** `npm-release.yml` (filename only, must match exactly)
+   - **Allowed actions:** `npm publish`
+3. Do **not** set `NODE_AUTH_TOKEN` / `NPM_TOKEN` on the publish job — OIDC replaces it.
+   Provenance is generated automatically.
+4. Optional hardening after OIDC works: package **Publishing access** →
+   “Require two-factor authentication and disallow tokens”.
+
+If a package does not exist yet, publish it once manually (with OTP) to create it,
+then add the trusted publisher and switch fully to CI.
 
 ### Local dry run
 
@@ -60,15 +72,15 @@ npm pack -w @openplait/core
 tar -tzf openplait-core-*.tgz | head
 ```
 
-### Manual publish
+### Manual publish (bootstrap / emergency)
 
 ```sh
 cd typescript
-npm publish -w @openplait/core --access public --tag alpha --provenance
-# …repeat in publish order, or rely on CI
+npm publish -w @openplait/core --access public --tag alpha --otp=<code>
+# …repeat in publish order, or rely on CI after trusted publishers are configured
 ```
 
-### CI publish (OpenLIT-style)
+### CI publish (trusted publishing)
 
 1. Bump **all** workspace package versions together (and internal `dependencies`).
 2. Commit on the release branch.
@@ -77,15 +89,15 @@ npm publish -w @openplait/core --access public --tag alpha --provenance
 ```sh
 cd typescript
 VERSION=$(node -p "require('./packages/core/package.json').version")
-git tag "ts-"
-git push origin "ts-"
+git tag "ts-${VERSION}"
+git push origin "ts-${VERSION}"
 ```
 
 4. [`.github/workflows/npm-release.yml`](./.github/workflows/npm-release.yml) runs with
    `working-directory: typescript` on tags `ts-*.*.*` (and `workflow_dispatch`):
    - validates tag version ↔ `packages/core/package.json`
    - `npm ci` → `npm run check` → `npm run build`
-   - `npm publish -w <pkg> --access public --tag <dist-tag> --provenance`
+   - `npm publish -w <pkg> --access public --tag <dist-tag>` via OIDC
 
 Default dist-tag for CI is **`alpha`** until you cut a stable `latest` via
 `workflow_dispatch` input.
