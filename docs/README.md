@@ -1,7 +1,7 @@
 # OpenPlait documentation
 
 Dashboard-style docs site (Next.js App Router + Tailwind) for
-[openlit/openplait](https://github.com/openlit/openplait).
+[OpenPlait](https://github.com/openlit/openplait).
 
 ```bash
 git clone git@github.com:openlit/openplait.git
@@ -15,7 +15,8 @@ npm run docs:build  # writes docs/out (static export)
 - **Browse:** https://github.com/openlit/openplait
 - Content: `content/**/*.mdx`
 - Navigation: `lib/nav.ts`
+- Brand assets: `/brand/*` (also mirrored at repo-root [`brand/`](../brand))
 
 Package READMEs under `typescript/packages/*` and `python/` stay concise for
 npm/PyPI; this site covers concepts, guides (TypeScript / Python tabs), examples,
-OpenLIT integration, and brand.
+and brand.

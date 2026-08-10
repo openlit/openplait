@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">OpenPlait mark</title>
+  <desc id="desc">Three datasource streams braided into one portable data layer.</desc>
+  <defs>
+    <linearGradient id="brand" x1="5" y1="8" x2="59" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F4B400"/>
+      <stop offset="0.52" stop-color="#D97706"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <path d="M7 14h10c12 0 12 36 26 36h14" fill="none" stroke="url(#brand)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M7 32h13c11 0 11-18 23-18h14" fill="none" stroke="url(#brand)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M7 50h10c12 0 12-18 26-18h14" fill="none" stroke="url(#brand)" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="7" cy="14" r="4" fill="#F4B400"/>
+  <circle cx="7" cy="32" r="4" fill="#D97706"/>
+  <circle cx="7" cy="50" r="4" fill="#7C3AED"/>
+</svg>

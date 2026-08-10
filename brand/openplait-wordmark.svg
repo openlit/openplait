@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 64" role="img" aria-labelledby="title desc">
+  <title id="title">OpenPlait</title>
+  <desc id="desc">OpenPlait logo and wordmark.</desc>
+  <defs>
+    <linearGradient id="brand" x1="4" y1="8" x2="60" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F4B400"/>
+      <stop offset="0.52" stop-color="#D97706"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="word" x1="78" y1="16" x2="252" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F4B400"/>
+      <stop offset="0.55" stop-color="#D97706"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0 0)">
+    <path d="M7 14h10c12 0 12 36 26 36h14" fill="none" stroke="url(#brand)" stroke-width="8" stroke-linecap="round"/>
+    <path d="M7 32h13c11 0 11-18 23-18h14" fill="none" stroke="url(#brand)" stroke-width="8" stroke-linecap="round"/>
+    <path d="M7 50h10c12 0 12-18 26-18h14" fill="none" stroke="url(#brand)" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <text x="76" y="43" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="800" letter-spacing="-1" fill="url(#word)">OpenPlait</text>
+</svg>

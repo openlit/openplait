@@ -58,8 +58,8 @@ runtime = OpenPlaitRuntime(registry)
 
 ## Release
 
-PyPI publishes follow OpenLIT’s Python SDK workflow: push a `py-*.*.*` tag
-(must match `[tool.poetry].version`). See [`../PUBLISHING.md`](../PUBLISHING.md).
+Push a `py-*.*.*` tag that matches `[tool.poetry].version` to publish.
+See [`../PUBLISHING.md`](../PUBLISHING.md).
 
 ## License
 

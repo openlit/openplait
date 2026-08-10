@@ -48,8 +48,8 @@ npm install @openplait/core @openplait/adapter-sdk \
 
 ## Release
 
-npm publishes follow OpenLIT’s TypeScript SDK workflow: push a `ts-*.*.*` tag
-that matches `packages/core` version. See [`../PUBLISHING.md`](../PUBLISHING.md).
+Push a `ts-*.*.*` tag that matches `packages/core` version to publish.
+See [`../PUBLISHING.md`](../PUBLISHING.md).
 
 ## Docs
 

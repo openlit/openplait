@@ -1,35 +1,37 @@
 <div align="center">
-<img src="https://github.com/openlit/.github/blob/main/profile/assets/wide-logo-no-bg.png?raw=true" alt="OpenLIT Logo" width="30%">
-<h3>Datasource-independent query &amp; dataframe layer</h3>
-<h1>OpenPlait</h1>
+  <img src="./brand/openplait-wordmark.svg" alt="OpenPlait" width="320" />
+  <p><strong>Datasource-independent query &amp; dataframe layer</strong></p>
 
-**[Docs](./docs) · [Getting started](./docs/content/getting-started.mdx) · [Publishing](./PUBLISHING.md) · [Contributing](./CONTRIBUTING.md) · [Plan](./plan.md)**
+**[Docs](./docs) · [Getting started](./docs/content/getting-started.mdx) · [Publishing](./PUBLISHING.md) · [Contributing](./CONTRIBUTING.md) · [Brand](./docs/content/brand.mdx)**
 
-[![License](https://img.shields.io/github/license/openlit/openplait?label=License&logo=github&color=f80&logoColor=white)](./LICENSE)
+[![License](https://img.shields.io/github/license/openlit/openplait?label=License&logo=github&color=d97706&logoColor=white)](./LICENSE)
 [![npm scope](https://img.shields.io/badge/npm-%40openplait-cb3837?logo=npm)](https://www.npmjs.com/org/openplait)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue?logo=python&logoColor=white)](./python)
-[![Slack](https://img.shields.io/badge/Slack-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/openlit/shared_invite/zt-2etnfttwg-TjP_7BZXfYg84oAukY8QRQ)
-[![GitHub](https://img.shields.io/badge/GitHub-openlit%2Fopenplait-181717?logo=github)](https://github.com/openlit/openplait)
-
+[![GitHub](https://img.shields.io/badge/GitHub-openplait-181717?logo=github)](https://github.com/openlit/openplait)
 </div>
+
+OpenPlait is a standalone, **application-neutral** interoperability layer for
+analytics and observability. It defines one portable query IR, normalized
+dataframes, transformations, dashboards, and alerts — without replacing PromQL,
+TraceQL, LogQL, SQL, or other native languages.
+
+Host applications own credentials, authorization, and UI. Adapters compile and
+execute bounded requests, then return OpenPlait frames any product can consume.
 
 ```bash
 git clone git@github.com:openlit/openplait.git
 cd openplait
 ```
 
-- **SSH:** `git@github.com:openlit/openplait.git`
-- **HTTPS:** `https://github.com/openlit/openplait.git`
+| | |
+| --- | --- |
+| **SSH** | `git@github.com:openlit/openplait.git` |
+| **HTTPS** | `https://github.com/openlit/openplait.git` |
+| **API** | `openplait.io/v1alpha1` |
+| **npm** | `@openplait/*` · `0.1.0-alpha.0` |
+| **PyPI** | `openplait` · `0.1.0a0` |
 
-OpenPlait is a **portable interoperability layer** for analytics and observability
-apps. It defines one query IR, normalized dataframes, transformations,
-dashboards, and alerts — without replacing PromQL, TraceQL, LogQL, SQL, or other
-native languages.
-
-Applications keep credentials and authz in their own server-side registry.
-Adapters compile and execute bounded requests, then return OpenPlait frames.
-OpenLIT is an early consumer (Connectors / Database Config); the contract is
-**application-neutral**.
+---
 
 ## Repository layout
 
@@ -38,6 +40,7 @@ OpenLIT is an early consumer (Connectors / Database Config); the contract is
 | [`typescript/`](./typescript) | npm workspaces — `@openplait/*` reference implementation |
 | [`python/`](./python) | Poetry package — `openplait` on PyPI (alpha) |
 | [`docs/`](./docs) | Documentation site |
+| [`brand/`](./brand) | Logo mark, wordmark, and concept art |
 | [`examples/`](./examples) | Portable query / dashboard examples |
 | [`specifications/`](./specifications) | Spec notes + schema pointers |
 
@@ -45,8 +48,6 @@ OpenLIT is an early consumer (Connectors / Database Config); the contract is
 | --- | --- | --- |
 | **TypeScript / Node** | Implemented (`@openplait/*`) | `npm install @openplait/core @openplait/runtime …` |
 | **Python** | Scaffold (`openplait`) | `pip install openplait` *(alpha)* |
-
-Current API line: **`openplait.io/v1alpha1`** · npm **`0.1.0-alpha.0`** · PyPI **`0.1.0a0`**.
 
 ---
 
@@ -160,7 +161,7 @@ See [`CONTRIBUTING.md`](./CONTRIBUTING.md) and [`plan.md`](./plan.md).
 
 ## Release workflow
 
-Same **tag-driven** pattern as OpenLIT SDKs:
+Tag-driven publishes for npm and PyPI:
 
 | Ecosystem | Sources | Tag | Workflow |
 | --- | --- | --- | --- |
@@ -173,7 +174,7 @@ Details: [`PUBLISHING.md`](./PUBLISHING.md).
 # npm alpha
 cd typescript
 VERSION=$(node -p "require('./packages/core/package.json').version")
-git tag "ts-" && git push origin "ts-"
+git tag "ts-${VERSION}" && git push origin "ts-${VERSION}"
 
 # PyPI alpha
 cd python
@@ -183,11 +184,15 @@ git tag "py-${VERSION}" && git push origin "py-${VERSION}"
 
 ---
 
-## OpenLIT integration
+## Brand
 
-- [Connectors](https://docs.openlit.io/latest/openlit/organisation/connectors)
-- [Signal routing](https://docs.openlit.io/latest/openlit/organisation/signal-routing)
-- [OpenLIT integration guide](./docs/content/guides/openlit.mdx)
+| Asset | Path |
+| --- | --- |
+| Wordmark | [`brand/openplait-wordmark.svg`](./brand/openplait-wordmark.svg) |
+| Mark | [`brand/openplait-mark.svg`](./brand/openplait-mark.svg) |
+| Concept | [`brand/openplait-logo-concept.png`](./brand/openplait-logo-concept.png) |
+
+Usage guidance: [Brand docs](./docs/content/brand.mdx).
 
 ## Project status
 
