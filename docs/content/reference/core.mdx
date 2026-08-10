@@ -1,0 +1,32 @@
+---
+title: Core API
+description: Resources, schemas, parsing, serialization, and validation in @openplait/core.
+---
+
+# `@openplait/core`
+
+The core package has no database client, network executor, renderer, or host
+application dependency.
+
+```ts
+import {
+  OPENPLAIT_API_VERSION,
+  parseDashboard,
+  parseQuery,
+  schemas,
+  validateQuery,
+  validateQueryResult,
+  type AlertRule,
+  type Dashboard,
+  type DataFrame,
+  type NativeQuery,
+  type QueryResult,
+  type SemanticQuery,
+  type TransformationPipeline,
+} from "@openplait/core";
+```
+
+JSON Schemas are available through `schemas` and package paths under
+`@openplait/core/schemas/v1alpha1/*`. Runtime validation also checks invariants
+such as unique query outputs, datasource bindings, dashboard references, grid
+bounds, and dataframe field lengths.

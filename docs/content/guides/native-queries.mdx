@@ -1,0 +1,66 @@
+---
+title: Native Queries
+description: Use native SQL and TraceQL as a controlled server-side escape hatch.
+---
+
+# Native Queries
+
+Native mode preserves access to backend-specific features, but deliberately
+bypasses semantic field and dataset allowlists. Adapters disable it by default.
+
+## ClickHouse SQL
+
+```ts
+const adapter = new ClickHouseAdapter({
+  url: clickhouseUrl,
+  allowNativeQueries: true,
+});
+
+const query = {
+  apiVersion: "openplait.io/v1alpha1",
+  kind: "Query",
+  metadata: { name: "single-value" },
+  spec: {
+    mode: "native",
+    datasource: { kind: "ClickHouseDatasource", name: "primary" },
+    native: {
+      language: "sql",
+      statement: "SELECT {value:UInt64} AS value",
+    },
+    parameters: { value: "${value}" },
+  },
+};
+```
+
+The adapter permits a single read-only statement and requires declared values
+to use ClickHouse parameter bindings.
+
+## Tempo TraceQL
+
+```ts
+const adapter = new TempoAdapter({
+  url: tempoUrl,
+  allowNativeQueries: true,
+});
+
+const query = {
+  apiVersion: "openplait.io/v1alpha1",
+  kind: "Query",
+  metadata: { name: "slow-spans" },
+  spec: {
+    mode: "native",
+    datasource: { kind: "TempoDatasource", name: "tempo-prod" },
+    native: { language: "traceql", statement: "{ span:duration > 500ms }" },
+    extensions: {
+      "io.openplait.tempo": {
+        timeRange: { from: fromIso, to: toIso },
+        limit: 100,
+        spansPerSpanSet: 20,
+      },
+    },
+  },
+};
+```
+
+Only expose native queries to trusted server-side code. Apply the same tenant,
+audit, timeout, cancellation, and outbound-network controls as semantic mode.

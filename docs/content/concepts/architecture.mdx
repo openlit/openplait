@@ -1,0 +1,44 @@
+---
+title: Architecture
+description: How OpenPlait separates application intent, portable contracts, and backend execution.
+---
+
+# Architecture
+
+OpenPlait is an interoperability layer, not a database proxy or observability
+product. It places a stable contract between product features and datasource
+implementations.
+
+```text
+Application features
+  dashboards · telemetry · rules · evaluations · AI analysis
+                         │
+                         ▼
+OpenPlait Query IR → runtime planning → normalized dataframes
+                         │
+              ┌──────────┴──────────┐
+              ▼                     ▼
+      ClickHouse adapter       Tempo adapter
+      parameterized SQL        bounded TraceQL
+```
+
+## Ownership boundaries
+
+| Host application owns | OpenPlait owns | Adapter owns |
+| --- | --- | --- |
+| Connection records and secrets | Query and dashboard resources | Configuration validation |
+| Tenant and project authorization | Dataframe result contract | Backend compilation |
+| Network and SSRF policy | Runtime routing and transformations | Bounded execution |
+| UI, scheduling, delivery | Capability negotiation | Response normalization |
+
+This boundary lets OpenLIT construct multiple datasource instances without
+making OpenPlait specific to OpenLIT. The same packages can power another
+application with a different connection store and UI.
+
+## Package layers
+
+- `@openplait/core` contains portable resources, types, schemas, parsing, and validation.
+- `@openplait/adapter-sdk` defines the adapter contract and stable error codes.
+- `@openplait/runtime` resolves datasources, plans execution, transforms frames, and evaluates alerts.
+- Adapter packages compile and execute against a particular backend.
+- `@openplait/perses` imports, exports, and binds portable dashboard definitions.

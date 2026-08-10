@@ -1,0 +1,155 @@
+# Publishing OpenPlait
+
+**Repository:** [openlit/openplait](https://github.com/openlit/openplait)  
+**Clone:** `git clone git@github.com:openlit/openplait.git`
+
+OpenPlait ships two language tracks. Release mechanics mirror **OpenLIT**:
+
+| Track | Sources | Packages | Tag (like OpenLIT) | Workflow | Secret |
+| --- | --- | --- | --- | --- | --- |
+| TypeScript | [`typescript/`](./typescript) | `@openplait/*` on npm | `ts-*.*.*` (same as OpenLIT) | [`.github/workflows/npm-release.yml`](./.github/workflows/npm-release.yml) | `NPM_TOKEN` |
+| Python | [`python/`](./python) | `openplait` on PyPI | `py-*.*.*` | [`.github/workflows/pypi-release.yml`](./.github/workflows/pypi-release.yml) | `PYPI_API_TOKEN` |
+
+Current TypeScript line: **`0.1.0-alpha.0`** (npm dist-tag `alpha`).  
+Current Python line: **`0.1.0a0`** (PyPI pre-release).
+
+The private workspace root is `typescript/` (package name `openplait`, not published).
+
+---
+
+## npm (`@openplait/*`)
+
+### Publish order
+
+1. `@openplait/core`
+2. `@openplait/adapter-sdk`
+3. `@openplait/adapter-clickhouse`
+4. `@openplait/adapter-tempo`
+5. `@openplait/adapter-loki`
+6. `@openplait/adapter-prometheus`
+7. `@openplait/adapter-jaeger`
+8. `@openplait/runtime`
+9. `@openplait/perses`
+
+### Package checklist
+
+Each publishable package under `typescript/packages/<name>` includes:
+
+- `"license": "Apache-2.0"` + `LICENSE`
+- `"publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" }`
+- `"files"` limited to build output + `README.md` + `LICENSE`
+- `"prepack": "npm run build"`
+- `"engines": { "node": ">=20.19" }`
+- `repository.directory` → `typescript/packages/<name>`
+
+### One-time npm org setup
+
+1. Create / claim the **`@openplait`** org on [npmjs.com](https://www.npmjs.com/).
+2. Create an automation token with publish rights.
+3. Store it as GitHub Actions secret **`NPM_TOKEN`**.
+4. Ensure the workflow has `id-token: write` for `--provenance`.
+
+### Local dry run
+
+```sh
+cd typescript
+npm install
+npm run publish:check
+
+npm pack -w @openplait/core
+tar -tzf openplait-core-*.tgz | head
+```
+
+### Manual publish
+
+```sh
+cd typescript
+npm publish -w @openplait/core --access public --tag alpha --provenance
+# …repeat in publish order, or rely on CI
+```
+
+### CI publish (OpenLIT-style)
+
+1. Bump **all** workspace package versions together (and internal `dependencies`).
+2. Commit on the release branch.
+3. Tag must match `typescript/packages/core` `package.json` `version`:
+
+```sh
+cd typescript
+VERSION=$(node -p "require('./packages/core/package.json').version")
+git tag "ts-"
+git push origin "ts-"
+```
+
+4. [`.github/workflows/npm-release.yml`](./.github/workflows/npm-release.yml) runs with
+   `working-directory: typescript` on tags `ts-*.*.*` (and `workflow_dispatch`):
+   - validates tag version ↔ `packages/core/package.json`
+   - `npm ci` → `npm run check` → `npm run build`
+   - `npm publish -w <pkg> --access public --tag <dist-tag> --provenance`
+
+Default dist-tag for CI is **`alpha`** until you cut a stable `latest` via
+`workflow_dispatch` input.
+
+### Consuming from OpenLIT
+
+```json
+{
+  "dependencies": {
+    "@openplait/core": "0.1.0-alpha.0",
+    "@openplait/adapter-sdk": "0.1.0-alpha.0",
+    "@openplait/adapter-clickhouse": "0.1.0-alpha.0",
+    "@openplait/adapter-tempo": "0.1.0-alpha.0",
+    "@openplait/adapter-loki": "0.1.0-alpha.0",
+    "@openplait/adapter-prometheus": "0.1.0-alpha.0",
+    "@openplait/adapter-jaeger": "0.1.0-alpha.0",
+    "@openplait/runtime": "0.1.0-alpha.0"
+  }
+}
+```
+
+---
+
+## PyPI (`openplait`)
+
+Python sources live in [`python/`](./python). Packaging uses **Poetry**, same as
+OpenLIT’s `sdk/python`.
+
+### One-time PyPI setup
+
+1. Create the `openplait` project on [pypi.org](https://pypi.org/).
+2. Create an API token and store it as GitHub Actions secret **`PYPI_API_TOKEN`**.
+
+### Local dry run
+
+```sh
+cd python
+poetry install
+poetry run pytest
+rm -rf dist/
+poetry build
+pip install twine && twine check dist/*
+```
+
+### CI publish (OpenLIT-style)
+
+1. Bump `[tool.poetry].version` in `python/pyproject.toml` (PEP 440, e.g. `0.1.0a0`).
+2. Tag and push:
+
+```sh
+cd python
+VERSION=$(poetry version -s)
+git tag "py-${VERSION}"
+git push origin "py-${VERSION}"
+```
+
+3. [`.github/workflows/pypi-release.yml`](./.github/workflows/pypi-release.yml) runs on
+   `push` tags `py-*.*.*` (and `workflow_dispatch`).
+
+---
+
+## Versioning policy
+
+- Keep TypeScript workspace versions **identical** across `@openplait/*`.
+- Align Python `0.1.0a0` with TS `0.1.0-alpha.0` conceptually (PEP 440 vs semver prerelease).
+- Patch: bugfixes only. Minor: additive. Breaking portable IR → new `apiVersion`.
+- Do not publish the private `typescript/` workspace root package.

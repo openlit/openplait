@@ -1,0 +1,35 @@
+{
+  "name": "openplait",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Datasource-independent interoperability specifications and runtime for analytics and observability.",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "homepage": "https://github.com/openlit/openplait#readme",
+  "bugs": {
+    "url": "https://github.com/openlit/openplait/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openlit/openplait.git"
+  },
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "check": "npm run typecheck && npm test",
+    "pack:all": "npm pack -w @openplait/core -w @openplait/adapter-sdk -w @openplait/adapter-clickhouse -w @openplait/adapter-tempo -w @openplait/adapter-loki -w @openplait/adapter-prometheus -w @openplait/adapter-jaeger -w @openplait/runtime -w @openplait/perses",
+    "publish:check": "npm run check && npm run build && npm run pack:all",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

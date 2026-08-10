@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.openplait.io/v1alpha1/dashboard.schema.json",
+  "title": "OpenPlait Dashboard",
+  "description": "A Perses-compatible dashboard composition with portable OpenPlait query references.",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "openplait.io/v1alpha1" },
+    "kind": { "const": "Dashboard" },
+    "metadata": {
+      "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/metadata"
+    },
+    "spec": { "$ref": "#/$defs/dashboardSpec" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "dashboardSpec": {
+      "type": "object",
+      "required": ["panels", "layouts", "duration"],
+      "properties": {
+        "display": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/display"
+        },
+        "datasources": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$" },
+          "additionalProperties": { "$ref": "#/$defs/datasource" }
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/textVariable" },
+              { "$ref": "#/$defs/listVariable" }
+            ]
+          }
+        },
+        "queries": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$" },
+          "additionalProperties": { "$ref": "#/$defs/queryDefinition" }
+        },
+        "panels": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$" },
+          "additionalProperties": { "$ref": "#/$defs/panel" }
+        },
+        "layouts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/gridLayout" }
+        },
+        "duration": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/duration"
+        },
+        "refreshInterval": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/duration"
+        },
+        "links": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/link" }
+        },
+        "extensions": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/extensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "datasource": {
+      "type": "object",
+      "required": ["plugin"],
+      "properties": {
+        "display": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/display"
+        },
+        "default": { "type": "boolean" },
+        "plugin": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/plugin"
+        }
+      },
+      "additionalProperties": false
+    },
+    "variableDisplay": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "hidden": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "textVariable": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "TextVariable" },
+        "spec": {
+          "type": "object",
+          "required": ["name", "value"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "display": { "$ref": "#/$defs/variableDisplay" },
+            "value": { "type": "string" },
+            "constant": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "listVariable": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "ListVariable" },
+        "spec": {
+          "type": "object",
+          "required": ["name", "plugin"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "display": { "$ref": "#/$defs/variableDisplay" },
+            "defaultValue": {
+              "oneOf": [
+                { "type": "string" },
+                { "type": "array", "items": { "type": "string" } }
+              ]
+            },
+            "allowAllValue": { "type": "boolean" },
+            "allowMultiple": { "type": "boolean" },
+            "customAllValue": { "type": "string" },
+            "capturingRegexp": { "type": "string" },
+            "sort": {
+              "enum": [
+                "none",
+                "alphabetical-asc",
+                "alphabetical-desc",
+                "numerical-asc",
+                "numerical-desc",
+                "alphabetical-ci-asc",
+                "alphabetical-ci-desc"
+              ]
+            },
+            "plugin": {
+              "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/plugin"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "queryDefinition": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "Query" },
+        "spec": {
+          "oneOf": [
+            { "$ref": "https://schemas.openplait.io/v1alpha1/query.schema.json#/$defs/semanticQuerySpec" },
+            { "$ref": "https://schemas.openplait.io/v1alpha1/query.schema.json#/$defs/nativeQuerySpec" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "openPlaitPanelQuery": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "OpenPlaitQuery" },
+        "spec": {
+          "type": "object",
+          "required": ["queryRef"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "queryRef": {
+              "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/jsonReference"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "pluginPanelQuery": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "spec": {
+          "type": "object",
+          "required": ["plugin"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "plugin": {
+              "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/plugin"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "link": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string", "minLength": 1 },
+        "tooltip": { "type": "string" },
+        "renderVariables": { "type": "boolean" },
+        "targetBlank": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "panel": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "Panel" },
+        "spec": {
+          "type": "object",
+          "required": ["plugin"],
+          "properties": {
+            "display": {
+              "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/display"
+            },
+            "plugin": {
+              "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/plugin"
+            },
+            "queries": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  { "$ref": "#/$defs/openPlaitPanelQuery" },
+                  { "$ref": "#/$defs/pluginPanelQuery" }
+                ]
+              }
+            },
+            "transformations": {
+              "type": "array",
+              "items": {
+                "$ref": "https://schemas.openplait.io/v1alpha1/transformation-pipeline.schema.json#/$defs/transformation"
+              }
+            },
+            "links": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/link" }
+            },
+            "extensions": {
+              "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/extensions"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "gridLayout": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "Grid" },
+        "spec": {
+          "type": "object",
+          "required": ["items"],
+          "properties": {
+            "display": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string" },
+                "collapse": {
+                  "type": "object",
+                  "required": ["open"],
+                  "properties": { "open": { "type": "boolean" } },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["x", "y", "width", "height", "content"],
+                "properties": {
+                  "x": { "type": "integer", "minimum": 0, "maximum": 23 },
+                  "y": { "type": "integer", "minimum": 0 },
+                  "width": { "type": "integer", "minimum": 1, "maximum": 24 },
+                  "height": { "type": "integer", "minimum": 1 },
+                  "content": {
+                    "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/jsonReference"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "repeatVariable": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

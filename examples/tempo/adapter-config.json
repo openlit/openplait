@@ -1,0 +1,16 @@
+{
+  "url": "https://tempo.example.com",
+  "requestTimeoutMs": 30000,
+  "queryTimeoutMs": 30000,
+  "maxResultRows": 1000,
+  "maxSpansPerSpanSet": 100,
+  "maxTimeRangeMs": 604800000,
+  "allowNativeQueries": false,
+  "attributeFields": {
+    "deployment.environment": {
+      "scope": "resource",
+      "attribute": "deployment.environment.name",
+      "type": "string"
+    }
+  }
+}

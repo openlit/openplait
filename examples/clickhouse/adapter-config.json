@@ -1,0 +1,11 @@
+{
+  "url": "http://localhost:8123",
+  "database": "openlit",
+  "applicationName": "openplait-example",
+  "queryTimeoutMs": 30000,
+  "maxResultRows": 10000,
+  "maxRowsToRead": 10000000,
+  "maxTimeRangeMs": 2678400000,
+  "requireTimeRange": true,
+  "allowNativeQueries": false
+}

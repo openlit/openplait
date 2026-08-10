@@ -1,0 +1,115 @@
+---
+title: Jaeger Adapter
+description: Search Jaeger traces by service via the Query HTTP API and normalize spans with events.
+---
+
+# Jaeger Adapter
+
+`@openplait/adapter-jaeger` talks to Jaeger's Query HTTP API (`/api/services`,
+`/api/traces`, `/api/traces/{id}`). Jaeger has no TraceQL equivalent — semantic
+search is service-scoped and returns normalized span rows (including span events
+mapped from Jaeger logs).
+
+In OpenLIT, Jaeger is a **project connector**: create/select a project, add a
+Jaeger connector under **Connectors**, then bind **traces** to it for an
+environment. See the OpenLIT [Connectors](https://docs.openlit.io/latest/openlit/organisation/connectors)
+and [Projects](https://docs.openlit.io/latest/openlit/organisation/projects) guides.
+
+## Configure
+
+```ts
+import { JaegerAdapter } from "@openplait/adapter-jaeger";
+
+const adapter = new JaegerAdapter({
+  url: "http://localhost:16686",
+  // Optional when discovery is blocked; otherwise `/api/services` is used.
+  // services: ["checkout", "payments"],
+  bearerToken: process.env.JAEGER_TOKEN,
+  maxResultRows: 1_000,
+  perServiceLimit: 100,
+});
+```
+
+Authentication options are bearer token, username/password, or custom HTTP
+headers. When the Query UI is mounted under `/jaeger`, `listServices()` retries
+with that path prefix and exposes the resolved base via `adapter.resolvedUrl`.
+
+## Semantic trace search
+
+Search uses signal `traces` and dataset `jaeger.traces`. A `service.name` equals
+filter is required because Jaeger's search API is service-scoped:
+
+```ts
+const traces = {
+  apiVersion: "openplait.io/v1alpha1",
+  kind: "Query",
+  metadata: { name: "checkout-spans" },
+  spec: {
+    mode: "semantic",
+    datasource: { kind: "JaegerDatasource", name: "jaeger-local" },
+    input: { signal: "traces", entity: "jaeger.traces" },
+    timeRange: { field: "timestamp", from: "${__from}", to: "${__to}" },
+    select: [
+      { field: "trace.id" },
+      { field: "span.id" },
+      { field: "service.name" },
+      { field: "span.name" },
+      { field: "duration" },
+    ],
+    where: {
+      and: [{ field: "service.name", operator: "equals", value: "checkout" }],
+    },
+    limit: 100,
+  },
+};
+
+const compiled = await adapter.compile(traces, {
+  variables: {
+    __from: "2026-08-05T00:00:00.000Z",
+    __to: "2026-08-05T01:00:00.000Z",
+  },
+});
+const result = await adapter.execute(compiled, { audit: { requestId: "req-1" } });
+```
+
+Helpers for product hosts that fan out across services:
+
+```ts
+const services = await adapter.listServices();
+const raw = await adapter.searchTraces({
+  service: "checkout",
+  startMs: Date.now() - 3_600_000,
+  endMs: Date.now(),
+  limit: 50,
+});
+const spans = adapter.normalizeSpans(raw);
+const one = await adapter.getTrace("0123456789abcdef0123456789abcdef");
+```
+
+## Local development
+
+```bash
+cd typescript/packages/adapter-jaeger/test/integration
+docker compose up -d
+./seed-traces.sh
+curl -s 'http://localhost:16686/api/services' | jq
+```
+
+| Endpoint | Purpose |
+| --- | --- |
+| `http://localhost:16686` | Jaeger UI + Query HTTP API |
+| `http://localhost:4318` | OTLP HTTP ingest for seeding |
+
+## OpenLIT connector
+
+OpenLIT wraps this package for guarded HTTP, vault secrets, AI-selector
+filtering, and in-process aggregates:
+
+1. Open **Organisation → Project → Connectors**
+2. Add **Jaeger** with URL `http://localhost:16686` (no auth for local all-in-one)
+3. Bind **traces** to that connector for the environment
+4. Open Telemetry — AI spans from the seed script appear under `openlit-demo`
+
+![OpenLIT Jaeger connector](/images/openlit-jaeger-connector.png)
+
+See also [OpenLIT Integration](/guides/openlit).

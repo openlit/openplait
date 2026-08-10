@@ -1,0 +1,47 @@
+apiVersion: openplait.io/v1alpha1
+kind: AlertRule
+metadata:
+  name: high-ai-cost
+  displayName: High AI cost
+spec:
+  query:
+    kind: Query
+    spec:
+      mode: semantic
+      datasource:
+        kind: ClickHouseDatasource
+        name: primary
+      input:
+        signal: traces
+        entity: otel.spans
+      timeRange:
+        field: timestamp
+        from: ${__from}
+        to: ${__to}
+      select:
+        - aggregate:
+            function: sum
+            field: gen_ai.usage.cost
+          as: total_cost
+  condition:
+    field: total_cost
+    reducer: last
+    operator: greaterThan
+    threshold: 100
+  evaluation:
+    every: 5m
+    lookback: 1h
+    for: 10m
+    noDataState: no_data
+    errorState: error
+  labels:
+    severity: warning
+    team: ai-platform
+  annotations:
+    summary: AI cost exceeded the configured hourly threshold
+  notifications:
+    - channelRef: default-operations
+      notifyOn:
+        - firing
+        - resolved
+        - error

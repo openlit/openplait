@@ -1,0 +1,27 @@
+---
+title: Adapter SDK API
+description: Contracts, contexts, capabilities, manifests, and error codes for datasource adapters.
+---
+
+# `@openplait/adapter-sdk`
+
+The SDK defines backend-neutral contracts used by every adapter:
+
+```ts
+import {
+  AdapterError,
+  type CompileContext,
+  type CompiledQuery,
+  type DatasourceAdapter,
+  type DatasourceCapabilities,
+  type DatasourceManifest,
+  type DiscoveryContext,
+  type ExecutionContext,
+  type QueryExplanation,
+} from "@openplait/adapter-sdk";
+```
+
+Stable error codes distinguish invalid configuration, invalid parameters,
+unsupported operations, rejected native queries, execution failure, timeout,
+and cancellation. Applications should branch on codes rather than parse error
+messages.

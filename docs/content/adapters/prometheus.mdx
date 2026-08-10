@@ -1,0 +1,44 @@
+---
+title: Prometheus Adapter
+description: Query Prometheus-compatible metric APIs with semantic or native PromQL.
+---
+
+# Prometheus Adapter
+
+`@openplait/adapter-prometheus` executes bounded `/api/v1/query_range`
+requests and normalizes matrix, vector, and scalar responses into timestamp,
+value, and label fields. The same adapter works with Prometheus-compatible
+query APIs such as Grafana Mimir.
+
+```ts
+import { PrometheusAdapter } from "@openplait/adapter-prometheus";
+
+const adapter = new PrometheusAdapter({
+  url: "http://localhost:9090",
+  allowNativeQueries: true,
+  defaultStep: "30s",
+  labelFields: { "service.name": "service_name" },
+});
+```
+
+```ts
+const query = {
+  apiVersion: "openplait.io/v1alpha1",
+  kind: "Query",
+  metadata: { name: "request-rate" },
+  spec: {
+    mode: "native",
+    datasource: { kind: "PrometheusDatasource", name: "metrics" },
+    native: { language: "promql", statement: 'sum(rate(http_requests_total[5m])) by (service_name)' },
+    extensions: {
+      "io.openplait.prometheus": {
+        timeRange: { from: "2026-08-05T00:00:00Z", to: "2026-08-05T01:00:00Z" },
+        step: "30s",
+      },
+    },
+  },
+};
+```
+
+Use `metricNames()`, `labelNames()`, and `labelValues()` for discovery-backed
+query editors. Authentication and tenant behavior is shared with Loki and Tempo.

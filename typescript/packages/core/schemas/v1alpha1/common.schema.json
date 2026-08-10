@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.openplait.io/v1alpha1/common.schema.json",
+  "title": "OpenPlait common definitions",
+  "$defs": {
+    "metadata": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$",
+          "maxLength": 253
+        },
+        "displayName": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "labels": { "$ref": "#/$defs/stringMap" },
+        "annotations": { "$ref": "#/$defs/stringMap" }
+      },
+      "additionalProperties": false
+    },
+    "stringMap": {
+      "type": "object",
+      "propertyNames": { "minLength": 1 },
+      "additionalProperties": { "type": "string" }
+    },
+    "datasourceReference": {
+      "type": "object",
+      "required": ["kind", "name"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "scope": {
+          "enum": ["dashboard", "workspace", "global"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "scalarValue": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "null" }
+      ]
+    },
+    "parameterValue": {
+      "oneOf": [
+        { "$ref": "#/$defs/scalarValue" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/scalarValue" }
+        }
+      ]
+    },
+    "parameters": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+      "additionalProperties": { "$ref": "#/$defs/parameterValue" }
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)+$"
+      },
+      "additionalProperties": true
+    },
+    "display": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "plugin": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "spec": { "type": "object", "additionalProperties": true },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "version": { "type": "string", "minLength": 1 },
+            "registry": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "jsonReference": {
+      "type": "object",
+      "required": ["$ref"],
+      "properties": {
+        "$ref": { "type": "string", "pattern": "^#/spec/(?:panels|queries)/[^/]+$" }
+      },
+      "additionalProperties": false
+    },
+    "duration": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]*)(?:ms|s|m|h|d|w)$"
+    }
+  }
+}

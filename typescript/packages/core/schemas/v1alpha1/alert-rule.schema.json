@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.openplait.io/v1alpha1/alert-rule.schema.json",
+  "title": "OpenPlait Alert Rule",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "openplait.io/v1alpha1" },
+    "kind": { "const": "AlertRule" },
+    "metadata": { "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/metadata" },
+    "spec": {
+      "type": "object",
+      "required": ["query", "condition", "evaluation"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "query": {
+          "type": "object",
+          "required": ["kind", "spec"],
+          "properties": {
+            "kind": { "const": "Query" },
+            "spec": {
+              "oneOf": [
+                { "$ref": "https://schemas.openplait.io/v1alpha1/query.schema.json#/$defs/semanticQuerySpec" },
+                { "$ref": "https://schemas.openplait.io/v1alpha1/query.schema.json#/$defs/nativeQuerySpec" }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "transformations": {
+          "type": "array",
+          "items": {
+            "$ref": "https://schemas.openplait.io/v1alpha1/transformation-pipeline.schema.json#/$defs/transformation"
+          }
+        },
+        "condition": {
+          "type": "object",
+          "required": ["field", "operator", "threshold"],
+          "properties": {
+            "field": { "type": "string", "minLength": 1 },
+            "operator": {
+              "enum": [
+                "equals",
+                "notEquals",
+                "greaterThan",
+                "greaterThanOrEqual",
+                "lessThan",
+                "lessThanOrEqual"
+              ]
+            },
+            "threshold": { "type": "number" },
+            "reducer": { "enum": ["first", "last", "min", "max", "mean", "sum", "count"] }
+          },
+          "additionalProperties": false
+        },
+        "evaluation": {
+          "type": "object",
+          "required": ["every"],
+          "properties": {
+            "every": { "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/duration" },
+            "lookback": { "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/duration" },
+            "for": { "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/duration" },
+            "noDataState": { "enum": ["no_data", "normal", "firing"] },
+            "errorState": { "enum": ["error", "normal", "firing"] }
+          },
+          "additionalProperties": false
+        },
+        "labels": { "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/stringMap" },
+        "annotations": { "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/stringMap" },
+        "notifications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["channelRef"],
+            "properties": {
+              "channelRef": { "type": "string", "minLength": 1 },
+              "notifyOn": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": { "enum": ["firing", "resolved", "error", "no_data"] }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "extensions": { "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/extensions" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

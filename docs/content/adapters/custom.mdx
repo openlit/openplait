@@ -1,0 +1,61 @@
+---
+title: Build an Adapter
+description: Implement an application-neutral datasource adapter with the OpenPlait SDK.
+---
+
+# Build an Adapter
+
+An adapter implements the `DatasourceAdapter` contract from
+`@openplait/adapter-sdk`. Keep backend details inside the package and return
+only portable core dataframes.
+
+```ts
+import type {
+  AdapterValidationResult,
+  CompileContext,
+  DatasourceAdapter,
+  DatasourceCapabilities,
+  ExecutionContext,
+} from "@openplait/adapter-sdk";
+import type { QueryResult, SemanticQuery } from "@openplait/core";
+
+export class ExampleAdapter
+  implements DatasourceAdapter<ExampleConfig, ExampleCompiled> {
+  readonly manifest = exampleManifest;
+
+  validateConfig(config: ExampleConfig): AdapterValidationResult<ExampleConfig> {
+    return config.url
+      ? { valid: true, value: config }
+      : { valid: false, errors: [{ path: "/url", message: "URL is required." }] };
+  }
+
+  async getCapabilities(): Promise<DatasourceCapabilities> {
+    return capabilities;
+  }
+
+  async compile(query: SemanticQuery, context: CompileContext) {
+    return compileBoundedRequest(query, context);
+  }
+
+  async execute(
+    compiled: ReturnType<typeof compileBoundedRequest>,
+    context: ExecutionContext,
+  ): Promise<QueryResult> {
+    const response = await requestBackend(compiled, context.abortSignal);
+    return normalizeResponse(response);
+  }
+}
+```
+
+## Adapter checklist
+
+- Validate URLs, authentication combinations, mappings, and bounds.
+- Publish precise capabilities and fail unsupported operations.
+- Allowlist semantic fields and datasets.
+- Bind values instead of interpolating user input.
+- Require bounded time ranges and result limits where appropriate.
+- Honor cancellation and timeouts.
+- Classify failures with stable `AdapterError` codes.
+- Redact secrets from errors, logs, metadata, and explain output.
+- Normalize and validate every result frame.
+- Add compiler, execution, security, and response-variant tests.

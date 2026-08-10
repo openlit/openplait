@@ -1,0 +1,244 @@
+apiVersion: openplait.io/v1alpha1
+kind: Dashboard
+metadata:
+  name: clickhouse-observability
+  displayName: AI observability
+spec:
+  display:
+    name: AI observability
+    description: Request volume, cost, and recent generative AI operations.
+  datasources:
+    primary:
+      display:
+        name: Primary ClickHouse
+      default: true
+      plugin:
+        kind: ClickHouseDatasource
+        spec:
+          connectionRef: clickhouse-primary
+    archive:
+      display:
+        name: Archive ClickHouse
+      plugin:
+        kind: ClickHouseDatasource
+        spec:
+          connectionRef: clickhouse-archive
+  variables:
+    - kind: ListVariable
+      spec:
+        name: service
+        display:
+          name: Service
+        allowAllValue: true
+        plugin:
+          kind: OpenPlaitVariableQuery
+          spec:
+            queryRef:
+              $ref: "#/spec/queries/service-values"
+            valueField: service
+  queries:
+    service-values:
+      kind: Query
+      spec:
+        mode: semantic
+        datasource:
+          kind: ClickHouseDatasource
+          name: primary
+          scope: dashboard
+        input:
+          signal: traces
+          entity: otel.spans
+        select:
+          - field: service.name
+            as: service
+        limit: 200
+    request-rate:
+      kind: Query
+      spec:
+        mode: semantic
+        datasource:
+          kind: ClickHouseDatasource
+          name: primary
+          scope: dashboard
+        input:
+          signal: traces
+          entity: otel.spans
+        timeRange:
+          field: timestamp
+          from: ${__from}
+          to: ${__to}
+        select:
+          - field: timestamp_bucket
+            as: time
+          - aggregate:
+              function: rate
+              field: trace.id
+              interval: 1m
+            as: requests_per_minute
+        where:
+          field: service.name
+          operator: equals
+          value: ${service}
+        groupBy:
+          - timeBucket:
+              field: timestamp
+              interval: 1m
+              as: timestamp_bucket
+        orderBy:
+          - field: time
+            direction: asc
+    total-cost:
+      kind: Query
+      spec:
+        mode: semantic
+        datasource:
+          kind: ClickHouseDatasource
+          name: primary
+          scope: dashboard
+        input:
+          signal: traces
+          entity: otel.spans
+        timeRange:
+          field: timestamp
+          from: ${__from}
+          to: ${__to}
+        select:
+          - aggregate:
+              function: sum
+              field: gen_ai.usage.cost
+            as: total_cost
+        where:
+          field: service.name
+          operator: equals
+          value: ${service}
+    recent-requests:
+      kind: Query
+      spec:
+        mode: semantic
+        datasource:
+          kind: ClickHouseDatasource
+          name: archive
+          scope: dashboard
+        input:
+          signal: traces
+          entity: otel.spans
+        timeRange:
+          field: timestamp
+          from: ${__from}
+          to: ${__to}
+        select:
+          - field: timestamp
+          - field: service.name
+            as: service
+          - field: gen_ai.request.model
+            as: model
+          - field: duration
+          - field: status.code
+            as: status
+        where:
+          field: service.name
+          operator: equals
+          value: ${service}
+        orderBy:
+          - field: timestamp
+            direction: desc
+        limit: 100
+  panels:
+    request-rate:
+      kind: Panel
+      spec:
+        display:
+          name: Requests per minute
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            dataMapping:
+              timeField: time
+              valueFields:
+                - requests_per_minute
+            display:
+              legend:
+                position: bottom
+              yAxis:
+                unit: requests/min
+        queries:
+          - kind: OpenPlaitQuery
+            spec:
+              name: Requests
+              queryRef:
+                $ref: "#/spec/queries/request-rate"
+    total-cost:
+      kind: Panel
+      spec:
+        display:
+          name: Total cost
+        plugin:
+          kind: StatChart
+          spec:
+            dataMapping:
+              valueField: total_cost
+            display:
+              unit: USD
+              decimals: 2
+              colorMode: value
+            calculation: last
+        queries:
+          - kind: OpenPlaitQuery
+            spec:
+              name: Cost
+              queryRef:
+                $ref: "#/spec/queries/total-cost"
+    recent-requests:
+      kind: Panel
+      spec:
+        display:
+          name: Recent requests
+        plugin:
+          kind: Table
+          spec:
+            dataMapping:
+              fields:
+                - timestamp
+                - service
+                - model
+                - duration
+                - status
+            display:
+              density: compact
+              showHeader: true
+        queries:
+          - kind: OpenPlaitQuery
+            spec:
+              name: Requests
+              queryRef:
+                $ref: "#/spec/queries/recent-requests"
+        transformations:
+          - kind: Limit
+            spec:
+              count: 50
+            execution:
+              preference: runtime
+  layouts:
+    - kind: Grid
+      spec:
+        items:
+          - x: 0
+            y: 0
+            width: 16
+            height: 8
+            content:
+              $ref: "#/spec/panels/request-rate"
+          - x: 16
+            y: 0
+            width: 8
+            height: 8
+            content:
+              $ref: "#/spec/panels/total-cost"
+          - x: 0
+            y: 8
+            width: 24
+            height: 10
+            content:
+              $ref: "#/spec/panels/recent-requests"
+  duration: 1h
+  refreshInterval: 30s

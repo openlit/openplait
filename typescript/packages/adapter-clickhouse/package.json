@@ -1,0 +1,66 @@
+{
+  "name": "@openplait/adapter-clickhouse",
+  "version": "0.1.0-alpha.0",
+  "description": "ClickHouse datasource adapter for OpenPlait and OpenLIT telemetry schemas.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist/src",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prebuild": "npm run build --workspace @openplait/adapter-sdk",
+    "prepack": "npm run build",
+    "pretest": "npm run build --workspace @openplait/adapter-sdk",
+    "test": "vitest run",
+    "pretypecheck": "npm run build --workspace @openplait/adapter-sdk",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "dependencies": {
+    "@clickhouse/client": "^1.23.1",
+    "@openplait/adapter-sdk": "0.1.0-alpha.0",
+    "@openplait/core": "0.1.0-alpha.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "license": "Apache-2.0",
+  "author": "OpenLIT",
+  "homepage": "https://github.com/openlit/openplait#readme",
+  "bugs": {
+    "url": "https://github.com/openlit/openplait/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openlit/openplait.git",
+    "directory": "typescript/packages/adapter-clickhouse"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "keywords": [
+    "openplait",
+    "openlit",
+    "opentelemetry",
+    "observability",
+    "datasource",
+    "adapter",
+    "promql",
+    "traceql",
+    "logql",
+    "adapter clickhouse"
+  ]
+}

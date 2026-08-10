@@ -1,0 +1,46 @@
+---
+title: Dataframes
+description: The normalized columnar result contract returned by every OpenPlait adapter.
+---
+
+# Dataframes
+
+Adapters return `QueryResult`, containing one or more typed dataframes. Fields
+are columnar: every field has exactly `frame.length` values.
+
+```ts
+import type { QueryResult } from "@openplait/core";
+
+const result: QueryResult = {
+  frames: [{
+    name: "requests-by-service",
+    length: 2,
+    fields: [
+      { name: "service", type: "string", values: ["checkout", "payments"] },
+      { name: "requests", type: "number", values: [1842, 907] },
+    ],
+  }],
+  metadata: {
+    datasource: "primary",
+    rowsReturned: 2,
+    executionTimeMs: 18,
+    cache: "miss",
+    warnings: [],
+  },
+};
+```
+
+Field types include strings, numbers, booleans, times, durations, traces, logs,
+JSON, and other portable visualization-friendly values. Optional units describe
+how a value should be formatted without coupling it to a chart library.
+
+Use `validateQueryResult(result)` at integration boundaries. It checks field
+shape, lengths, names, and metadata invariants before product code consumes a
+third-party adapter response.
+
+## Transformations
+
+The runtime can filter, select, rename, calculate, sort, limit, group, join,
+merge, pivot, unpivot, convert units, fill missing values, apply windows,
+expand labels, and extract JSON properties. Placement can be `source`,
+`runtime`, `client`, or capability-aware `auto`.

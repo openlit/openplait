@@ -1,0 +1,82 @@
+---
+title: Query Model
+description: Semantic and native OpenPlait query resources.
+---
+
+# Query Model
+
+Every query is a versioned `Query` resource. Its datasource is a reference to a
+server-side registration, not a URL or credentials object.
+
+## Semantic mode
+
+Semantic queries describe intent with canonical fields and operations. An
+adapter decides whether and how that intent maps to its backend.
+
+```yaml
+apiVersion: openplait.io/v1alpha1
+kind: Query
+metadata:
+  name: errors-by-service
+spec:
+  mode: semantic
+  datasource:
+    kind: ClickHouseDatasource
+    name: primary
+  input:
+    signal: traces
+    entity: otel.spans
+  timeRange:
+    field: timestamp
+    from: ${__from}
+    to: ${__to}
+  select:
+    - field: service.name
+      as: service
+    - aggregate:
+        function: count
+      as: errors
+  where:
+    field: status.code
+    operator: equals
+    value: error
+  groupBy:
+    - field: service.name
+  limit: 50
+```
+
+The IR supports recursive boolean filters, selection, aggregation, grouping,
+time buckets, ordering, limits, arithmetic expressions, and declared joins.
+Adapters report unsupported operations rather than silently changing meaning.
+
+## Native mode
+
+Native mode is an explicit server-side escape hatch for capabilities the
+semantic model cannot represent. It is disabled by default in the reference
+adapters.
+
+```ts
+const nativeQuery = {
+  apiVersion: "openplait.io/v1alpha1",
+  kind: "Query",
+  metadata: { name: "slow-traces" },
+  spec: {
+    mode: "native",
+    datasource: { kind: "TempoDatasource", name: "tempo-prod" },
+    native: {
+      language: "traceql",
+      statement: "{ span:duration > 500ms }",
+    },
+    extensions: {
+      "io.openplait.tempo": {
+        timeRange: { from: "2026-08-05T00:00:00Z", to: "2026-08-05T01:00:00Z" },
+        limit: 100,
+        spansPerSpanSet: 20,
+      },
+    },
+  },
+};
+```
+
+Treat native access as privileged. OpenPlait still enforces one read-only
+statement, explicit parameters or bounds, and configured execution limits.

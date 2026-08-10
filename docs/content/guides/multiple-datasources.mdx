@@ -1,0 +1,60 @@
+---
+title: Multiple Datasources
+description: Construct and route several backend instances without coupling resources to credentials.
+---
+
+# Multiple Datasources
+
+Create one adapter per connection record. The host resolves secrets and decides
+which records the current tenant may register.
+
+```ts
+import { ClickHouseAdapter } from "@openplait/adapter-clickhouse";
+import { TempoAdapter } from "@openplait/adapter-tempo";
+import { DatasourceRegistry, OpenPlaitRuntime } from "@openplait/runtime";
+
+const registry = new DatasourceRegistry();
+
+for (const source of authorizedSources) {
+  if (source.type === "clickhouse") {
+    const config = await resolveClickHouseConfig(source);
+    registry.register({
+      name: source.id,
+      kind: "ClickHouseDatasource",
+      scope: "workspace",
+      config,
+      adapter: new ClickHouseAdapter(config),
+    });
+  }
+
+  if (source.type === "tempo") {
+    const config = await resolveTempoConfig(source);
+    registry.register({
+      name: source.id,
+      kind: "TempoDatasource",
+      scope: "workspace",
+      config,
+      adapter: new TempoAdapter(config),
+    });
+  }
+}
+
+const runtime = new OpenPlaitRuntime(registry);
+```
+
+Point each query at the relevant ID:
+
+```ts
+query.spec.datasource = {
+  kind: "TempoDatasource",
+  name: selectedTraceSourceId,
+  scope: "workspace",
+};
+```
+
+## Security rules
+
+Filter connection records by tenant or project before registration. Resolve
+secret references on the server, enforce an outbound-network policy, and never
+accept a client-supplied URL as a registered datasource. Audit context should
+identify the caller and tenant on every execution.

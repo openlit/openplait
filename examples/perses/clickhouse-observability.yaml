@@ -1,0 +1,122 @@
+kind: Dashboard
+metadata:
+  name: clickhouse-observability
+  project: observability
+  labels:
+    environment: demo
+spec:
+  display:
+    name: AI observability
+    description: A Perses dashboard backed by ClickHouse.
+  datasources:
+    primary:
+      default: true
+      plugin:
+        kind: ClickHouseDatasource
+        spec:
+          connectionRef: clickhouse-primary
+    archive:
+      plugin:
+        kind: ClickHouseDatasource
+        spec:
+          connectionRef: clickhouse-archive
+  variables:
+    - kind: TextVariable
+      spec:
+        name: service
+        display:
+          name: Service
+        value: checkout
+  panels:
+    request-rate:
+      kind: Panel
+      spec:
+        display:
+          name: Requests per minute
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            dataMapping:
+              timeField: time
+              valueFields:
+                - requests
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              name: Requests
+              plugin:
+                kind: ClickHouseTimeSeriesQuery
+                spec:
+                  datasource: primary
+                  query: SELECT toStartOfMinute(Timestamp) AS time, count() AS requests FROM otel_traces GROUP BY time
+    total-cost:
+      kind: Panel
+      spec:
+        display:
+          name: Total cost
+        plugin:
+          kind: StatChart
+          spec:
+            dataMapping:
+              valueField: total_cost
+            display:
+              unit: USD
+              decimals: 2
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: ClickHouseTimeSeriesQuery
+                spec:
+                  datasource: primary
+                  query: SELECT sum(toFloat64OrZero(SpanAttributes['gen_ai.usage.cost'])) AS total_cost FROM otel_traces
+    recent-requests:
+      kind: Panel
+      spec:
+        display:
+          name: Recent requests
+        plugin:
+          kind: Table
+          spec:
+            dataMapping:
+              fields:
+                - timestamp
+                - service
+                - model
+                - duration
+        queries:
+          - kind: TableQuery
+            spec:
+              plugin:
+                kind: ClickHouseTableQuery
+                spec:
+                  datasource: archive
+                  query: SELECT Timestamp AS timestamp, ServiceName AS service, Model AS model, Duration AS duration FROM otel_traces LIMIT 100
+  layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: Overview
+          collapse:
+            open: true
+        items:
+          - x: 0
+            y: 0
+            width: 16
+            height: 8
+            content:
+              $ref: "#/spec/panels/request-rate"
+          - x: 16
+            y: 0
+            width: 8
+            height: 8
+            content:
+              $ref: "#/spec/panels/total-cost"
+          - x: 0
+            y: 8
+            width: 24
+            height: 10
+            content:
+              $ref: "#/spec/panels/recent-requests"
+  duration: 1h
+  refreshInterval: 30s

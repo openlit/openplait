@@ -1,0 +1,389 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.openplait.io/v1alpha1/query.schema.json",
+  "title": "OpenPlait Query",
+  "description": "A portable semantic query or a bound, datasource-native query.",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "openplait.io/v1alpha1" },
+    "kind": { "const": "Query" },
+    "metadata": {
+      "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/metadata"
+    },
+    "spec": {
+      "oneOf": [
+        { "$ref": "#/$defs/semanticQuerySpec" },
+        { "$ref": "#/$defs/nativeQuerySpec" }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "semanticQuerySpec": {
+      "type": "object",
+      "required": ["mode", "datasource", "input", "select"],
+      "properties": {
+        "mode": { "const": "semantic" },
+        "datasource": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/datasourceReference"
+        },
+        "input": { "$ref": "#/$defs/queryInput" },
+        "timeRange": { "$ref": "#/$defs/timeRange" },
+        "select": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/selectExpression" }
+        },
+        "where": { "$ref": "#/$defs/booleanExpression" },
+        "groupBy": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/groupByExpression" }
+        },
+        "orderBy": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/orderByExpression" }
+        },
+        "joins": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/joinExpression" }
+        },
+        "limit": { "type": "integer", "minimum": 1 },
+        "parameters": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/parameters"
+        },
+        "extensions": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/extensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "nativeQuerySpec": {
+      "type": "object",
+      "required": ["mode", "datasource", "native"],
+      "properties": {
+        "mode": { "const": "native" },
+        "datasource": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/datasourceReference"
+        },
+        "native": {
+          "type": "object",
+          "required": ["language", "statement"],
+          "properties": {
+            "language": { "type": "string", "minLength": 1 },
+            "statement": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "parameters": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/parameters"
+        },
+        "extensions": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/extensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "queryInput": {
+      "type": "object",
+      "required": ["signal", "entity"],
+      "properties": {
+        "signal": { "enum": ["metrics", "logs", "traces", "tabular"] },
+        "entity": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "timeRange": {
+      "type": "object",
+      "required": ["field", "from", "to"],
+      "properties": {
+        "field": { "type": "string", "minLength": 1 },
+        "from": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/scalarValue"
+        },
+        "to": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/scalarValue"
+        }
+      },
+      "additionalProperties": false
+    },
+    "comparisonExpression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["field", "operator", "value"],
+          "properties": {
+            "field": { "type": "string", "minLength": 1 },
+            "operator": {
+              "enum": [
+                "equals",
+                "notEquals",
+                "greaterThan",
+                "greaterThanOrEqual",
+                "lessThan",
+                "lessThanOrEqual",
+                "in",
+                "notIn",
+                "contains",
+                "notContains",
+                "startsWith",
+                "endsWith",
+                "matches"
+              ]
+            },
+            "value": {
+              "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/parameterValue"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["field", "operator"],
+          "properties": {
+            "field": { "type": "string", "minLength": 1 },
+            "operator": { "enum": ["isNull", "isNotNull"] }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "booleanExpression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["and"],
+          "properties": {
+            "and": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/booleanExpression" }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["or"],
+          "properties": {
+            "or": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/booleanExpression" }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["not"],
+          "properties": {
+            "not": { "$ref": "#/$defs/booleanExpression" }
+          },
+          "additionalProperties": false
+        },
+        { "$ref": "#/$defs/comparisonExpression" }
+      ]
+    },
+    "valueExpression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["field"],
+          "properties": {
+            "field": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["value"],
+          "properties": {
+            "value": {
+              "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/scalarValue"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["add"],
+          "properties": {
+            "add": {
+              "type": "array",
+              "minItems": 2,
+              "items": { "$ref": "#/$defs/valueExpression" }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["subtract"],
+          "properties": {
+            "subtract": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "$ref": "#/$defs/valueExpression" }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["multiply"],
+          "properties": {
+            "multiply": {
+              "type": "array",
+              "minItems": 2,
+              "items": { "$ref": "#/$defs/valueExpression" }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["divide"],
+          "properties": {
+            "divide": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "items": { "$ref": "#/$defs/valueExpression" }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "aggregateExpression": {
+      "type": "object",
+      "required": ["function"],
+      "properties": {
+        "function": {
+          "enum": [
+            "count",
+            "sum",
+            "avg",
+            "min",
+            "max",
+            "percentile",
+            "distinctCount",
+            "rate",
+            "histogram"
+          ]
+        },
+        "field": { "type": "string", "minLength": 1 },
+        "percentile": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 100 },
+        "interval": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "function": { "const": "percentile" } }, "required": ["function"] },
+          "then": {
+            "properties": { "field": true, "percentile": true },
+            "required": ["field", "percentile"]
+          }
+        },
+        {
+          "if": { "properties": { "function": { "const": "histogram" } }, "required": ["function"] },
+          "then": {
+            "properties": { "field": true, "interval": true },
+            "required": ["field", "interval"]
+          }
+        },
+        {
+          "if": { "properties": { "function": { "enum": ["sum", "avg", "min", "max", "distinctCount", "rate"] } }, "required": ["function"] },
+          "then": {
+            "properties": { "field": true },
+            "required": ["field"]
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "selectExpression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["field"],
+          "properties": {
+            "field": { "type": "string", "minLength": 1 },
+            "as": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["aggregate", "as"],
+          "properties": {
+            "aggregate": { "$ref": "#/$defs/aggregateExpression" },
+            "as": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["expression", "as"],
+          "properties": {
+            "expression": { "$ref": "#/$defs/valueExpression" },
+            "as": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "groupByExpression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["field"],
+          "properties": {
+            "field": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["timeBucket"],
+          "properties": {
+            "timeBucket": {
+              "type": "object",
+              "required": ["field", "interval"],
+              "properties": {
+                "field": { "type": "string", "minLength": 1 },
+                "interval": { "type": "string", "minLength": 1 },
+                "as": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "orderByExpression": {
+      "type": "object",
+      "required": ["field", "direction"],
+      "properties": {
+        "field": { "type": "string", "minLength": 1 },
+        "direction": { "enum": ["asc", "desc"] }
+      },
+      "additionalProperties": false
+    },
+    "joinExpression": {
+      "type": "object",
+      "required": ["entity", "on"],
+      "properties": {
+        "entity": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["inner", "left"] },
+        "on": { "$ref": "#/$defs/booleanExpression" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

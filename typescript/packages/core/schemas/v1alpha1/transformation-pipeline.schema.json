@@ -1,0 +1,387 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.openplait.io/v1alpha1/transformation-pipeline.schema.json",
+  "title": "OpenPlait Transformation Pipeline",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "openplait.io/v1alpha1" },
+    "kind": { "const": "TransformationPipeline" },
+    "metadata": { "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/metadata" },
+    "spec": {
+      "type": "object",
+      "required": ["transformations"],
+      "properties": {
+        "transformations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/transformation" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "execution": {
+      "type": "object",
+      "required": ["preference"],
+      "properties": { "preference": { "enum": ["auto", "source", "runtime", "client"] } },
+      "additionalProperties": false
+    },
+    "baseProperties": {
+      "execution": { "$ref": "#/$defs/execution" }
+    },
+    "fieldName": { "type": "string", "minLength": 1 },
+    "fieldNames": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/fieldName" }
+    },
+    "dataFieldType": {
+      "enum": ["string", "number", "boolean", "time", "duration", "trace", "json"]
+    },
+    "transformation": {
+      "oneOf": [
+        { "$ref": "#/$defs/filterRows" },
+        { "$ref": "#/$defs/selectFields" },
+        { "$ref": "#/$defs/renameFields" },
+        { "$ref": "#/$defs/calculateField" },
+        { "$ref": "#/$defs/sort" },
+        { "$ref": "#/$defs/limit" },
+        { "$ref": "#/$defs/groupAndReduce" },
+        { "$ref": "#/$defs/joinFrames" },
+        { "$ref": "#/$defs/mergeFrames" },
+        { "$ref": "#/$defs/pivot" },
+        { "$ref": "#/$defs/unpivot" },
+        { "$ref": "#/$defs/convertUnit" },
+        { "$ref": "#/$defs/fillMissing" },
+        { "$ref": "#/$defs/windowCalculation" },
+        { "$ref": "#/$defs/labelsToFields" },
+        { "$ref": "#/$defs/extractJsonProperty" }
+      ]
+    },
+    "filterRows": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "FilterRows" },
+        "spec": {
+          "type": "object",
+          "required": ["condition"],
+          "properties": {
+            "condition": { "$ref": "https://schemas.openplait.io/v1alpha1/query.schema.json#/$defs/booleanExpression" }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "selectFields": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "SelectFields" },
+        "spec": {
+          "type": "object",
+          "required": ["fields"],
+          "properties": { "fields": { "$ref": "#/$defs/fieldNames" } },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "renameFields": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "RenameFields" },
+        "spec": {
+          "type": "object",
+          "required": ["mappings"],
+          "properties": {
+            "mappings": {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": { "minLength": 1 },
+              "additionalProperties": { "$ref": "#/$defs/fieldName" }
+            }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "calculateField": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "CalculateField" },
+        "spec": {
+          "type": "object",
+          "required": ["as", "expression"],
+          "properties": {
+            "as": { "$ref": "#/$defs/fieldName" },
+            "expression": { "$ref": "https://schemas.openplait.io/v1alpha1/query.schema.json#/$defs/valueExpression" },
+            "type": { "$ref": "#/$defs/dataFieldType" },
+            "unit": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "sort": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "Sort" },
+        "spec": {
+          "type": "object",
+          "required": ["by"],
+          "properties": {
+            "by": {
+              "oneOf": [
+                { "$ref": "https://schemas.openplait.io/v1alpha1/query.schema.json#/$defs/orderByExpression" },
+                {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "$ref": "https://schemas.openplait.io/v1alpha1/query.schema.json#/$defs/orderByExpression" }
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "limit": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "Limit" },
+        "spec": {
+          "type": "object",
+          "required": ["count"],
+          "properties": { "count": { "type": "integer", "minimum": 0 } },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "reduction": {
+      "type": "object",
+      "required": ["function", "as"],
+      "properties": {
+        "field": { "$ref": "#/$defs/fieldName" },
+        "function": { "enum": ["count", "sum", "avg", "min", "max", "first", "last"] },
+        "as": { "$ref": "#/$defs/fieldName" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "function": { "not": { "const": "count" } } }, "required": ["function"] },
+          "then": { "properties": { "field": true }, "required": ["field"] }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "groupAndReduce": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "GroupAndReduce" },
+        "spec": {
+          "type": "object",
+          "required": ["reductions"],
+          "properties": {
+            "by": { "$ref": "#/$defs/fieldNames" },
+            "reductions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/reduction" } }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "joinFrames": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "JoinFrames" },
+        "spec": {
+          "type": "object",
+          "required": ["left", "right", "on"],
+          "properties": {
+            "left": { "$ref": "#/$defs/fieldName" },
+            "right": { "$ref": "#/$defs/fieldName" },
+            "on": { "$ref": "#/$defs/fieldNames" },
+            "type": { "enum": ["inner", "left", "full"] },
+            "as": { "$ref": "#/$defs/fieldName" }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "mergeFrames": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "MergeFrames" },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "frames": { "$ref": "#/$defs/fieldNames" },
+            "as": { "$ref": "#/$defs/fieldName" }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "pivot": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "Pivot" },
+        "spec": {
+          "type": "object",
+          "required": ["index", "column", "value"],
+          "properties": {
+            "index": { "$ref": "#/$defs/fieldNames" },
+            "column": { "$ref": "#/$defs/fieldName" },
+            "value": { "$ref": "#/$defs/fieldName" },
+            "aggregation": { "enum": ["first", "last", "sum", "avg", "min", "max"] }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "unpivot": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "Unpivot" },
+        "spec": {
+          "type": "object",
+          "required": ["fields", "namesTo", "valuesTo"],
+          "properties": {
+            "fields": { "$ref": "#/$defs/fieldNames" },
+            "namesTo": { "$ref": "#/$defs/fieldName" },
+            "valuesTo": { "$ref": "#/$defs/fieldName" },
+            "keep": { "$ref": "#/$defs/fieldNames" }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "convertUnit": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "ConvertUnit" },
+        "spec": {
+          "type": "object",
+          "required": ["field", "to"],
+          "properties": {
+            "field": { "$ref": "#/$defs/fieldName" },
+            "from": { "$ref": "#/$defs/fieldName" },
+            "to": { "$ref": "#/$defs/fieldName" }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "fillMissing": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "FillMissing" },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "fields": { "$ref": "#/$defs/fieldNames" },
+            "strategy": { "enum": ["constant", "zero", "previous", "next"] },
+            "value": { "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/scalarValue" }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "windowCalculation": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "WindowCalculation" },
+        "spec": {
+          "type": "object",
+          "required": ["field", "as", "function"],
+          "properties": {
+            "field": { "$ref": "#/$defs/fieldName" },
+            "as": { "$ref": "#/$defs/fieldName" },
+            "function": { "enum": ["movingAverage", "runningSum", "difference"] },
+            "size": { "type": "integer", "minimum": 1 },
+            "unit": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "labelsToFields": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "LabelsToFields" },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "fields": { "$ref": "#/$defs/fieldNames" },
+            "prefix": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    },
+    "extractJsonProperty": {
+      "type": "object",
+      "required": ["kind", "spec"],
+      "properties": {
+        "kind": { "const": "ExtractJsonProperty" },
+        "spec": {
+          "type": "object",
+          "required": ["field", "path", "as"],
+          "properties": {
+            "field": { "$ref": "#/$defs/fieldName" },
+            "path": { "type": "string", "minLength": 1 },
+            "as": { "$ref": "#/$defs/fieldName" },
+            "type": { "$ref": "#/$defs/dataFieldType" }
+          },
+          "additionalProperties": false
+        },
+        "execution": { "$ref": "#/$defs/execution" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

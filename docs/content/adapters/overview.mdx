@@ -1,0 +1,43 @@
+---
+title: Adapters
+description: Backend implementations of the portable OpenPlait datasource contract used by OpenLIT connectors.
+---
+
+# Adapters
+
+Adapters validate connection configuration, publish capabilities, compile
+semantic queries, execute bounded requests, and normalize results.
+
+OpenLIT’s **Connectors** UI wraps these packages for Tempo, Loki, Prometheus,
+ClickHouse, and Jaeger.
+
+| Package | Kind | Signals and operations | In OpenLIT CE |
+| --- | --- | --- | --- |
+| `@openplait/adapter-clickhouse` | `ClickHouseDatasource` | OTel traces, logs, metrics, aggregates, discovery, native SQL | Yes (Database Config) |
+| `@openplait/adapter-tempo` | `TempoDatasource` | Trace search, OTLP trace retrieval, tag discovery, TraceQL | Yes |
+| `@openplait/adapter-loki` | `LokiDatasource` | LogQL streams, semantic log filters, label discovery | Yes |
+| `@openplait/adapter-prometheus` | `PrometheusDatasource` | PromQL range queries, metric/label discovery | Yes |
+| `@openplait/adapter-jaeger` | `JaegerDatasource` | Service-scoped trace search, span events from logs | Yes |
+
+An adapter must be honest about its capabilities. The runtime checks the plan
+before execution so an unsupported join or transformation fails explicitly.
+
+TypeScript packages are under [`typescript/packages`](https://github.com/openlit/openplait/tree/main/typescript/packages).
+Python adapters live under [`python/src/openplait/adapters`](https://github.com/openlit/openplait/tree/main/python/src/openplait/adapters)
+(ClickHouse scaffold first). See [Getting started](/getting-started/) for
+side-by-side TypeScript / Python tabs.
+
+```ts
+const validation = adapter.validateConfig(config);
+const capabilities = await adapter.getCapabilities(config);
+const schema = await adapter.discoverSchema({});
+```
+
+Connection configuration is server-side input. Query resources only carry a
+datasource reference.
+
+See OpenLIT product docs: [Connectors](https://docs.openlit.io/latest/openlit/organisation/connectors)
+and [Signal routing](https://docs.openlit.io/latest/openlit/organisation/signal-routing).
+
+To add these adapters to another app with Cursor, use the
+[Agent Skills](/guides/agent-skills/) under `.cursor/skills/`.

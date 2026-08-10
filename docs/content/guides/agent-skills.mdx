@@ -1,0 +1,58 @@
+---
+title: Agent Skills
+description: Cursor Agent Skills shipped with OpenPlait so anyone can add OpenPlait to their system quickly.
+---
+
+# Agent Skills
+
+OpenPlait ships **project Cursor skills** under [`.cursor/skills/`](https://github.com/openlit/openplait/tree/main/.cursor/skills).
+Anyone cloning the repo (or copying these skill folders into their app) can ask
+an agent to integrate OpenPlait without memorizing package APIs.
+
+Skills are markdown playbooks the agent loads when the task matches the skill
+description. Point Cursor at this repository, or copy
+`.cursor/skills/<name>/` into your project’s `.cursor/skills/`.
+
+## Available skills
+
+| Skill | Use when |
+| --- | --- |
+| [`integrate-openplait`](https://github.com/openlit/openplait/tree/main/.cursor/skills/integrate-openplait) | Install packages, register datasources, run portable queries |
+| [`create-openplait-adapter`](https://github.com/openlit/openplait/tree/main/.cursor/skills/create-openplait-adapter) | Build a custom `DatasourceAdapter` |
+| [`openplait-clickhouse`](https://github.com/openlit/openplait/tree/main/.cursor/skills/openplait-clickhouse) | Wire `@openplait/adapter-clickhouse` |
+| [`openplait-tempo`](https://github.com/openlit/openplait/tree/main/.cursor/skills/openplait-tempo) | Wire `@openplait/adapter-tempo` |
+| [`openplait-loki`](https://github.com/openlit/openplait/tree/main/.cursor/skills/openplait-loki) | Wire `@openplait/adapter-loki` |
+| [`openplait-prometheus`](https://github.com/openlit/openplait/tree/main/.cursor/skills/openplait-prometheus) | Wire `@openplait/adapter-prometheus` |
+| [`openplait-jaeger`](https://github.com/openlit/openplait/tree/main/.cursor/skills/openplait-jaeger) | Wire `@openplait/adapter-jaeger` |
+
+## How to use in Cursor
+
+1. Open a workspace that includes this repo (or your fork with the skills copied).
+2. Ask the agent something like:
+   - “Add OpenPlait with Tempo to this Node API”
+   - “Create an OpenPlait adapter for our store”
+   - “Wire Jaeger using the openplait-jaeger skill”
+3. The agent should follow the matching `SKILL.md` (install → register → query → validate).
+
+You can also invoke a skill by name in the agent prompt.
+
+## Copy into another repository
+
+```bash
+mkdir -p .cursor/skills
+cp -R path/to/openplait/.cursor/skills/integrate-openplait .cursor/skills/
+cp -R path/to/openplait/.cursor/skills/openplait-tempo .cursor/skills/
+# add adapter skills as needed
+```
+
+Keep skill folders small and task-focused. Prefer linking to docs under
+`docs/content/` rather than duplicating long API reference in the skill body.
+
+## Related docs
+
+- [Getting Started](/getting-started/)
+- [TypeScript](/guides/typescript/)
+- [Python](/guides/python/)
+- [Build an Adapter](/adapters/custom/)
+- [OpenLIT Integration](/guides/openlit/)
+- [Multiple Datasources](/guides/multiple-datasources/)

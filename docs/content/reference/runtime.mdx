@@ -1,0 +1,25 @@
+---
+title: Runtime API
+description: Datasource registration, planning, execution, transformations, and alert evaluation.
+---
+
+# `@openplait/runtime`
+
+```ts
+import {
+  AlertEvaluator,
+  DatasourceRegistry,
+  InMemoryAlertStateStore,
+  OpenPlaitRuntime,
+  RuntimeError,
+} from "@openplait/runtime";
+```
+
+`OpenPlaitRuntime.execute()` accepts queries, transformations, variables, audit
+context, cancellation, and an optional timeout. It returns the normalized
+result, execution plan, deferred client transformations, per-query metadata,
+and warnings.
+
+`AlertEvaluator` executes an `AlertRule` through the same registry and emits
+provider-neutral notification intents. The host owns scheduling, durable state,
+secrets, channel configuration, retries, and delivery.

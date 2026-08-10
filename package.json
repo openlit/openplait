@@ -1,0 +1,23 @@
+{
+  "name": "openplait",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OpenPlait monorepo root — TypeScript lives in typescript/, Python in python/.",
+  "homepage": "https://github.com/openlit/openplait#readme",
+  "bugs": {
+    "url": "https://github.com/openlit/openplait/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openlit/openplait.git"
+  },
+  "license": "Apache-2.0",
+  "scripts": {
+    "docs:dev": "npm run dev --prefix docs",
+    "docs:build": "npm run build --prefix docs",
+    "check:js": "npm run check --prefix typescript",
+    "build:js": "npm run build --prefix typescript",
+    "test:js": "npm test --prefix typescript",
+    "publish:check": "npm run publish:check --prefix typescript"
+  }
+}

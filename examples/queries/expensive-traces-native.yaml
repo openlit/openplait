@@ -1,0 +1,21 @@
+apiVersion: openplait.io/v1alpha1
+kind: Query
+metadata:
+  name: expensive-traces-native
+spec:
+  mode: native
+  datasource:
+    kind: ClickHouseDatasource
+    name: openlit-clickhouse
+  native:
+    language: sql
+    statement: |
+      SELECT
+        SpanAttributes['gen_ai.request.model'] AS model,
+        sum(toFloat64OrZero(SpanAttributes['gen_ai.usage.cost'])) AS cost
+      FROM otel_traces
+      WHERE Timestamp BETWEEN {from:DateTime64} AND {to:DateTime64}
+      GROUP BY model
+  parameters:
+    from: ${__from}
+    to: ${__to}

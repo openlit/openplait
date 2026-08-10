@@ -1,0 +1,30 @@
+{
+  "frames": [
+    {
+      "name": "average_latency_by_model",
+      "length": 2,
+      "fields": [
+        {
+          "name": "model",
+          "type": "string",
+          "values": ["gpt-5", "claude"]
+        },
+        {
+          "name": "average_latency",
+          "type": "number",
+          "unit": "ms",
+          "values": [860, 710]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "datasource": "clickhouse",
+    "adapterVersion": "0.1.0",
+    "executionTimeMs": 48,
+    "rowsRead": 210000,
+    "rowsReturned": 2,
+    "cache": "miss",
+    "warnings": []
+  }
+}

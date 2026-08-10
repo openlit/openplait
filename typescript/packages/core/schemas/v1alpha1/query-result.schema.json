@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.openplait.io/v1alpha1/query-result.schema.json",
+  "title": "OpenPlait QueryResult",
+  "description": "Datasource-independent dataframe query output.",
+  "type": "object",
+  "required": ["frames"],
+  "properties": {
+    "frames": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dataFrame" }
+    },
+    "metadata": { "$ref": "#/$defs/executionMetadata" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "dataField": {
+      "type": "object",
+      "required": ["name", "type", "values"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": {
+          "enum": ["string", "number", "boolean", "time", "duration", "trace", "json"]
+        },
+        "values": { "type": "array" },
+        "labels": {
+          "$ref": "https://schemas.openplait.io/v1alpha1/common.schema.json#/$defs/stringMap"
+        },
+        "unit": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "frameMetadata": {
+      "type": "object",
+      "properties": {
+        "preferredVisualisation": { "type": "string", "minLength": 1 },
+        "custom": { "type": "object", "additionalProperties": true }
+      },
+      "additionalProperties": false
+    },
+    "dataFrame": {
+      "type": "object",
+      "required": ["fields", "length"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "fields": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/dataField" }
+        },
+        "length": { "type": "integer", "minimum": 0 },
+        "metadata": { "$ref": "#/$defs/frameMetadata" }
+      },
+      "additionalProperties": false
+    },
+    "executionMetadata": {
+      "type": "object",
+      "properties": {
+        "datasource": { "type": "string", "minLength": 1 },
+        "adapterVersion": { "type": "string", "minLength": 1 },
+        "executionTimeMs": { "type": "number", "minimum": 0 },
+        "rowsRead": { "type": "integer", "minimum": 0 },
+        "rowsReturned": { "type": "integer", "minimum": 0 },
+        "cache": { "enum": ["hit", "miss", "bypass"] },
+        "warnings": { "type": "array", "items": { "type": "string" } },
+        "traceId": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,45 @@
+---
+title: Datasource Routing
+description: Resolve multiple named datasource instances safely and predictably.
+---
+
+# Datasource Routing
+
+Queries identify a datasource with `kind`, `name`, and an optional scope. The
+runtime resolves that reference against registrations built by the host.
+
+```ts
+const registry = new DatasourceRegistry()
+  .register({
+    name: "primary",
+    kind: "ClickHouseDatasource",
+    scope: "workspace",
+    config: primaryConfig,
+    adapter: new ClickHouseAdapter(primaryConfig),
+  })
+  .register({
+    name: "archive",
+    kind: "ClickHouseDatasource",
+    scope: "workspace",
+    config: archiveConfig,
+    adapter: new ClickHouseAdapter(archiveConfig),
+  })
+  .register({
+    name: "tempo-prod",
+    kind: "TempoDatasource",
+    scope: "workspace",
+    config: tempoConfig,
+    adapter: new TempoAdapter(tempoConfig),
+  });
+```
+
+Resolution priority is `dashboard`, then `workspace`, then `global` unless the
+query specifies a scope. A matching name with the wrong kind fails with
+`DATASOURCE_KIND_MISMATCH`; it never falls through to an unrelated adapter.
+
+## Selected connectors
+
+A product such as OpenLIT can store a selected connector ID per signal and map
+that record to the named registration. The actual traces, logs, or metrics then
+come from the selected instance. OpenPlait does not select a product connector
+or read its database—it executes the datasource reference supplied by the host.

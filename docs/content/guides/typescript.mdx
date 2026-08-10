@@ -1,0 +1,115 @@
+---
+title: TypeScript
+description: Develop OpenPlait from the typescript/ workspace, with Python counterparts in tabs.
+---
+
+# TypeScript
+
+The reference implementation lives under
+[`typescript/`](https://github.com/openlit/openplait/tree/main/typescript)
+(npm workspaces), parallel to [`python/`](https://github.com/openlit/openplait/tree/main/python).
+
+```text
+typescript/
+  package.json
+  packages/
+    core/                 → @openplait/core
+    adapter-sdk/          → @openplait/adapter-sdk
+    adapter-clickhouse/   → @openplait/adapter-clickhouse
+    adapter-tempo/        → @openplait/adapter-tempo
+    adapter-loki/         → @openplait/adapter-loki
+    adapter-prometheus/   → @openplait/adapter-prometheus
+    adapter-jaeger/       → @openplait/adapter-jaeger
+    runtime/              → @openplait/runtime
+    perses/               → @openplait/perses
+```
+
+## Develop from source
+
+<LangTabs ariaLabel="Develop language">
+  <LangTab label="TypeScript">
+
+```bash
+cd typescript
+npm install
+npm run check
+npm run build
+```
+
+From the repo root:
+
+```bash
+npm run check:js
+npm run build:js
+```
+
+  </LangTab>
+  <LangTab label="Python">
+
+```bash
+cd python
+poetry install
+poetry run pytest
+```
+
+  </LangTab>
+</LangTabs>
+
+## Install published packages
+
+<LangTabs ariaLabel="Install language">
+  <LangTab label="TypeScript">
+
+```bash
+npm install @openplait/core @openplait/adapter-sdk \
+  @openplait/runtime @openplait/adapter-clickhouse
+```
+
+  </LangTab>
+  <LangTab label="Python">
+
+```bash
+pip install openplait
+```
+
+  </LangTab>
+</LangTabs>
+
+Continue with [Getting started](/getting-started/) for registry + query examples
+(TypeScript and Python in tabs).
+
+## Release
+
+<LangTabs ariaLabel="Release language">
+  <LangTab label="TypeScript">
+
+```bash
+cd typescript
+VERSION=$(node -p "require('./packages/core/package.json').version")
+git tag "ts-"
+git push origin "ts-"
+```
+
+Workflow uses `working-directory: typescript`.
+
+  </LangTab>
+  <LangTab label="Python">
+
+```bash
+cd python
+VERSION=$(poetry version -s)
+git tag "py-${VERSION}"
+git push origin "py-${VERSION}"
+```
+
+  </LangTab>
+</LangTabs>
+
+See [PUBLISHING.md](https://github.com/openlit/openplait/blob/main/PUBLISHING.md).
+
+## Related
+
+- [Python](/guides/python/)
+- [Getting started](/getting-started/)
+- [Agent Skills](/guides/agent-skills/)
+- [Build an Adapter](/adapters/custom/)

@@ -1,0 +1,189 @@
+---
+title: Python
+description: Use OpenPlait from Python with TypeScript counterparts shown side by side.
+---
+
+# Python
+
+OpenPlait’s Python package lives in [`python/`](https://github.com/openlit/openplait/tree/main/python)
+and mirrors the TypeScript workspace under [`typescript/`](https://github.com/openlit/openplait/tree/main/typescript).
+
+| Python module | TypeScript package |
+| --- | --- |
+| `openplait.core` | `@openplait/core` |
+| `openplait.adapter_sdk` | `@openplait/adapter-sdk` |
+| `openplait.runtime` | `@openplait/runtime` |
+| `openplait.adapters.clickhouse` | `@openplait/adapter-clickhouse` (scaffold) |
+
+Status: **alpha**. Query parse/validate and runtime registration work today.
+Full ClickHouse/Tempo/Loki/Prometheus/Jaeger execute ports track the Node
+reference adapters.
+
+## Install
+
+<LangTabs ariaLabel="Install language">
+  <LangTab label="Python">
+
+```bash
+pip install openplait
+```
+
+From the repo:
+
+```bash
+cd python
+poetry install
+poetry run pytest
+```
+
+  </LangTab>
+  <LangTab label="TypeScript">
+
+```bash
+cd typescript
+npm install
+npm run check
+```
+
+Or from npm:
+
+```bash
+npm install @openplait/core @openplait/adapter-sdk \
+  @openplait/runtime @openplait/adapter-clickhouse
+```
+
+  </LangTab>
+</LangTabs>
+
+## Register + validate a query
+
+Never put passwords or tokens in query documents — only in server-side config.
+
+<LangTabs ariaLabel="Register and validate language">
+  <LangTab label="Python">
+
+```python
+from openplait import OPENPLAIT_API_VERSION
+from openplait.adapters import ClickHouseAdapter, ClickHouseConfig
+from openplait.core import parse_query, validate_query
+from openplait.runtime import DatasourceRegistry, OpenPlaitRuntime
+from openplait.runtime.registry import RuntimeDatasourceRegistration
+
+config = ClickHouseConfig(
+    url="http://localhost:8123",
+    username="default",
+    password="OPENLIT",
+    database="openlit",
+)
+
+registry = DatasourceRegistry().register(
+    RuntimeDatasourceRegistration(
+        name="primary",
+        kind="ClickHouseDatasource",
+        adapter=ClickHouseAdapter(config),
+        config=config,
+    )
+)
+runtime = OpenPlaitRuntime(registry)
+
+query = parse_query(
+    {
+        "apiVersion": OPENPLAIT_API_VERSION,
+        "kind": "Query",
+        "metadata": {"name": "spans-sample"},
+        "spec": {
+            "mode": "semantic",
+            "datasource": {"kind": "ClickHouseDatasource", "name": "primary"},
+            "input": {"signal": "traces", "entity": "otel.spans"},
+            "select": [{"field": "service.name"}],
+            "limit": 25,
+        },
+    }
+)
+assert validate_query(query).valid
+```
+
+  </LangTab>
+  <LangTab label="TypeScript">
+
+```ts
+import { ClickHouseAdapter } from "@openplait/adapter-clickhouse";
+import {
+  OPENPLAIT_API_VERSION,
+  type SemanticQuery,
+} from "@openplait/core";
+import { DatasourceRegistry, OpenPlaitRuntime } from "@openplait/runtime";
+
+const config = {
+  url: "http://localhost:8123",
+  username: "default",
+  password: "OPENLIT",
+  database: "openlit",
+};
+
+const registry = new DatasourceRegistry().register({
+  name: "primary",
+  kind: "ClickHouseDatasource",
+  scope: "workspace",
+  config,
+  adapter: new ClickHouseAdapter(config),
+});
+
+const runtime = new OpenPlaitRuntime(registry);
+
+const query: SemanticQuery = {
+  apiVersion: OPENPLAIT_API_VERSION,
+  kind: "Query",
+  metadata: { name: "spans-sample" },
+  spec: {
+    mode: "semantic",
+    datasource: { kind: "ClickHouseDatasource", name: "primary" },
+    input: { signal: "traces", entity: "otel.spans" },
+    select: [{ field: "service.name" }],
+    limit: 25,
+  },
+};
+```
+
+  </LangTab>
+</LangTabs>
+
+## Release
+
+<LangTabs ariaLabel="Release language">
+  <LangTab label="Python">
+
+```bash
+cd python
+poetry version 0.1.0a0   # bump as needed
+git tag py-0.1.0a0
+git push origin py-0.1.0a0
+```
+
+  </LangTab>
+  <LangTab label="TypeScript">
+
+```bash
+cd typescript
+VERSION=$(node -p "require('./packages/core/package.json').version")
+git tag "ts-"
+git push origin "ts-"
+```
+
+  </LangTab>
+</LangTabs>
+
+See [PUBLISHING.md](https://github.com/openlit/openplait/blob/main/PUBLISHING.md).
+
+## Roadmap
+
+1. Complete ClickHouse compile/execute parity with `@openplait/adapter-clickhouse`
+2. Port Tempo, Loki, Prometheus, and Jaeger adapters
+3. Frame transforms and alert evaluation parity with `@openplait/runtime`
+4. Keep `apiVersion` and JSON Schemas shared with TypeScript
+
+## Related
+
+- [Getting started](/getting-started/) (tabs for both languages)
+- [TypeScript](/guides/typescript/)
+- [Agent Skills](/guides/agent-skills/)

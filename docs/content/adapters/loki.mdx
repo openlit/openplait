@@ -1,0 +1,46 @@
+---
+title: Grafana Loki Adapter
+description: Query Loki logs through bounded semantic LogQL or native LogQL.
+---
+
+# Grafana Loki Adapter
+
+`@openplait/adapter-loki` maps portable log filters to Loki stream selectors
+and line filters. Results are normalized to `timestamp`, `body`, and `labels`
+fields, so consumers never depend on Loki's stream response shape.
+
+```ts
+import { LokiAdapter } from "@openplait/adapter-loki";
+
+const adapter = new LokiAdapter({
+  url: "http://localhost:3100",
+  tenantId: "tenant-a",
+  allowNativeQueries: true,
+  maxTimeRangeMs: 7 * 24 * 60 * 60 * 1000,
+});
+```
+
+Native LogQL must include an explicit range in its namespaced extension:
+
+```ts
+const query = {
+  apiVersion: "openplait.io/v1alpha1",
+  kind: "Query",
+  metadata: { name: "application-errors" },
+  spec: {
+    mode: "native",
+    datasource: { kind: "LokiDatasource", name: "logs" },
+    native: { language: "logql", statement: '{service_name="checkout"} |= "failed"' },
+    extensions: {
+      "io.openplait.loki": {
+        timeRange: { from: "2026-08-05T00:00:00Z", to: "2026-08-05T01:00:00Z" },
+        limit: 500,
+        direction: "backward",
+      },
+    },
+  },
+};
+```
+
+Use `labelNames()` and `labelValues()` to populate filter controls. Basic,
+Bearer, static headers, and `X-Scope-OrgID` tenant authentication are supported.

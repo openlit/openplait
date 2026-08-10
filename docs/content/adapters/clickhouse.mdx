@@ -1,0 +1,155 @@
+---
+title: ClickHouse Adapter
+description: Configure safe semantic and native ClickHouse queries with OpenTelemetry mappings — TypeScript and Python.
+---
+
+# ClickHouse Adapter
+
+ClickHouse compiles semantic queries into parameterized, read-only SQL and
+normalizes JSON responses into dataframes.
+
+- **TypeScript:** `@openplait/adapter-clickhouse` (full reference)
+- **Python:** `openplait.adapters.ClickHouseAdapter` (config + capabilities scaffold)
+
+## Configure
+
+<LangTabs ariaLabel="Configure ClickHouse language">
+  <LangTab label="TypeScript">
+
+```ts
+import { ClickHouseAdapter } from "@openplait/adapter-clickhouse";
+
+const adapter = new ClickHouseAdapter({
+  url: "https://clickhouse.example.com:8443",
+  username: process.env.CLICKHOUSE_USER,
+  password: process.env.CLICKHOUSE_PASSWORD,
+  database: "observability",
+  httpHeaders: { "X-ClickHouse-Quota": "product-api" },
+  maxResultRows: 10_000,
+  maxRowsToRead: 10_000_000,
+  maxTimeRangeMs: 31 * 24 * 60 * 60 * 1_000,
+  queryTimeoutMs: 30_000,
+});
+```
+
+  </LangTab>
+  <LangTab label="Python">
+
+```python
+import os
+from openplait.adapters import ClickHouseAdapter, ClickHouseConfig
+
+adapter = ClickHouseAdapter(
+    ClickHouseConfig(
+        url="https://clickhouse.example.com:8443",
+        username=os.environ.get("CLICKHOUSE_USER"),
+        password=os.environ.get("CLICKHOUSE_PASSWORD"),
+        database="observability",
+    )
+)
+```
+
+Python currently validates config and reports capabilities. Semantic
+compile/execute parity with TypeScript is on the roadmap.
+
+  </LangTab>
+</LangTabs>
+
+## Default datasets
+
+| Logical dataset | Default table |
+| --- | --- |
+| `otel.spans` | `otel_traces` |
+| `otel.logs` | `otel_logs` |
+| `otel.metrics.gauge` | `otel_metrics_gauge` |
+| `otel.metrics.sum` | `otel_metrics_sum` |
+| `otel.metrics.histogram` | `otel_metrics_histogram` |
+
+Applications may supply additional allowlisted mappings through `datasets`.
+OpenLIT can opt into its preset without changing generic defaults:
+
+<LangTabs ariaLabel="OpenLIT datasets language">
+  <LangTab label="TypeScript">
+
+```ts
+import {
+  ClickHouseAdapter,
+  OPENLIT_CLICKHOUSE_DATASETS,
+} from "@openplait/adapter-clickhouse";
+
+const adapter = new ClickHouseAdapter({
+  url: clickhouseUrl,
+  datasets: [...OPENLIT_CLICKHOUSE_DATASETS],
+});
+```
+
+  </LangTab>
+  <LangTab label="Python">
+
+```python
+# OpenLIT dataset presets remain TypeScript-first for now.
+# Register ClickHouseConfig with your own table mappings once the Python
+# compile path lands; until then prefer @openplait/adapter-clickhouse.
+from openplait.adapters import ClickHouseAdapter, ClickHouseConfig
+
+adapter = ClickHouseAdapter(
+    ClickHouseConfig(url=clickhouse_url, database="openlit")
+)
+```
+
+  </LangTab>
+</LangTabs>
+
+## Compile, inspect, execute
+
+<LangTabs ariaLabel="Execute ClickHouse language">
+  <LangTab label="TypeScript">
+
+```ts
+const compiled = await adapter.compile(query, {
+  variables: { __from: fromIso, __to: toIso },
+});
+
+const explanation = await adapter.explain(query, {
+  variables: { __from: fromIso, __to: toIso },
+});
+
+const result = await adapter.execute(compiled, {
+  audit: { requestId: "request-6a1c", actorId: "user-42" },
+});
+
+await adapter.close();
+```
+
+Native SQL is disabled unless `allowNativeQueries: true` is set. Even then,
+queries are single-statement and read-only, parameters use ClickHouse bindings,
+and configured row, time, and read limits still apply.
+
+  </LangTab>
+  <LangTab label="Python">
+
+```python
+from openplait.core import parse_query, validate_query
+from openplait import OPENPLAIT_API_VERSION
+
+query = parse_query(
+    {
+        "apiVersion": OPENPLAIT_API_VERSION,
+        "kind": "Query",
+        "metadata": {"name": "spans"},
+        "spec": {
+            "mode": "semantic",
+            "datasource": {"kind": "ClickHouseDatasource", "name": "primary"},
+            "input": {"signal": "traces", "entity": "otel.spans"},
+            "select": [{"field": "service.name"}],
+            "limit": 50,
+        },
+    }
+)
+assert validate_query(query).valid
+
+# await adapter.execute(query, config=config)  # not implemented yet
+```
+
+  </LangTab>
+</LangTabs>

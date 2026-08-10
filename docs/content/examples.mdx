@@ -1,0 +1,75 @@
+---
+title: Examples
+description: End-to-end OpenPlait examples for ClickHouse, Tempo, and multi-source execution.
+---
+
+# Examples
+
+## Count logs by severity in ClickHouse
+
+```ts
+const query = {
+  apiVersion: "openplait.io/v1alpha1",
+  kind: "Query",
+  metadata: { name: "logs-by-severity" },
+  spec: {
+    mode: "semantic",
+    datasource: { kind: "ClickHouseDatasource", name: "primary" },
+    input: { signal: "logs", entity: "otel.logs" },
+    timeRange: { field: "timestamp", from: "${__from}", to: "${__to}" },
+    select: [
+      { field: "log.severity", as: "severity" },
+      { aggregate: { function: "count" }, as: "logs" },
+    ],
+    groupBy: [{ field: "log.severity" }],
+    orderBy: [{ field: "logs", direction: "desc" }],
+    limit: 20,
+  },
+};
+```
+
+## Find error traces in Tempo
+
+```ts
+const query = {
+  apiVersion: "openplait.io/v1alpha1",
+  kind: "Query",
+  metadata: { name: "recent-errors" },
+  spec: {
+    mode: "semantic",
+    datasource: { kind: "TempoDatasource", name: "tempo-prod" },
+    input: { signal: "traces", entity: "tempo.trace_search" },
+    timeRange: { field: "timestamp", from: "${__from}", to: "${__to}" },
+    select: [
+      { field: "trace.id" },
+      { field: "timestamp" },
+      { field: "root.service.name", as: "service" },
+      { field: "root.span.name", as: "rootSpan" },
+    ],
+    where: { field: "status.code", operator: "equals", value: "error" },
+    orderBy: [{ field: "timestamp", direction: "desc" }],
+    limit: 50,
+  },
+};
+```
+
+## Execute queries against different sources together
+
+```ts
+const response = await runtime.execute({
+  queries: [clickHouseMetricsQuery, tempoErrorTraceQuery],
+  variables: { __from: fromIso, __to: toIso },
+  audit: { requestId: crypto.randomUUID(), tenantId: workspaceId },
+  abortSignal: request.signal,
+});
+
+const metrics = response.result.frames.find(
+  (frame) => frame.name === clickHouseMetricsQuery.metadata.name,
+);
+const traces = response.result.frames.find(
+  (frame) => frame.name === tempoErrorTraceQuery.metadata.name,
+);
+```
+
+The runtime executes independent queries concurrently, preserves named frames,
+and reports per-query datasource, adapter, cache, timing, and row metadata.

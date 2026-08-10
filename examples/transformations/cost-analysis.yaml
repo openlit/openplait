@@ -1,0 +1,34 @@
+apiVersion: openplait.io/v1alpha1
+kind: TransformationPipeline
+metadata:
+  name: cost-analysis
+  displayName: Cost analysis
+spec:
+  transformations:
+    - kind: FilterRows
+      spec:
+        condition:
+          field: total_cost
+          operator: greaterThan
+          value: 0
+      execution:
+        preference: auto
+    - kind: CalculateField
+      spec:
+        as: cost_per_request
+        expression:
+          divide:
+            - field: total_cost
+            - field: request_count
+        type: number
+        unit: currencyUSD
+      execution:
+        preference: runtime
+    - kind: Sort
+      spec:
+        by:
+          field: cost_per_request
+          direction: desc
+    - kind: Limit
+      spec:
+        count: 20

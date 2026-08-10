@@ -1,0 +1,259 @@
+---
+title: Getting Started
+description: Install OpenPlait in TypeScript or Python, register a server-side datasource, and execute your first portable query.
+---
+
+# Getting Started
+
+OpenPlait gives applications one query and dataframe contract across different
+analytics and observability backends. The application still owns connection
+records, credentials, authorization, and presentation.
+
+## Requirements
+
+- **TypeScript:** Node.js 20.19+, npm 10+
+- **Python:** Python 3.9+
+- A ClickHouse (or Tempo / Loki / Prometheus / Jaeger) endpoint for adapters you enable
+
+Prefer guided setup? Use the Cursor [Agent Skills](/guides/agent-skills/) shipped
+in this repo. Language guides: [TypeScript](/guides/typescript/) · [Python](/guides/python/).
+
+```bash
+git clone git@github.com:openlit/openplait.git
+cd openplait
+```
+
+## Install
+
+Sources live under [`typescript/`](https://github.com/openlit/openplait/tree/main/typescript)
+and [`python/`](https://github.com/openlit/openplait/tree/main/python).
+
+<LangTabs ariaLabel="Install language">
+  <LangTab label="TypeScript">
+
+```bash
+npm install @openplait/core @openplait/adapter-sdk \
+  @openplait/runtime @openplait/adapter-clickhouse
+```
+
+For Tempo, replace the last package with `@openplait/adapter-tempo`. You can
+install multiple adapters in the same app.
+
+  </LangTab>
+  <LangTab label="Python">
+
+```bash
+pip install openplait
+```
+
+From the repo (Poetry):
+
+```bash
+cd python
+poetry install
+```
+
+Python is **alpha**: query parse/validate and runtime registration work today;
+ClickHouse execute parity with Node is still landing.
+
+  </LangTab>
+</LangTabs>
+
+## Register a datasource
+
+Construct adapters on the server. Never include passwords or tokens in query,
+dashboard, or browser-visible resources.
+
+<LangTabs ariaLabel="Register datasource language">
+  <LangTab label="TypeScript">
+
+```ts
+import { ClickHouseAdapter } from "@openplait/adapter-clickhouse";
+import { DatasourceRegistry, OpenPlaitRuntime } from "@openplait/runtime";
+
+const config = {
+  url: process.env.CLICKHOUSE_URL!,
+  username: process.env.CLICKHOUSE_USER,
+  password: process.env.CLICKHOUSE_PASSWORD,
+  database: "observability",
+};
+
+const registry = new DatasourceRegistry().register({
+  name: "primary",
+  kind: "ClickHouseDatasource",
+  scope: "workspace",
+  config,
+  adapter: new ClickHouseAdapter(config),
+});
+
+export const runtime = new OpenPlaitRuntime(registry, {
+  defaultTimeoutMs: 30_000,
+});
+```
+
+  </LangTab>
+  <LangTab label="Python">
+
+```python
+import os
+from openplait.adapters import ClickHouseAdapter, ClickHouseConfig
+from openplait.runtime import DatasourceRegistry, OpenPlaitRuntime
+from openplait.runtime.registry import RuntimeDatasourceRegistration
+
+config = ClickHouseConfig(
+    url=os.environ["CLICKHOUSE_URL"],
+    username=os.environ.get("CLICKHOUSE_USER"),
+    password=os.environ.get("CLICKHOUSE_PASSWORD"),
+    database="observability",
+)
+
+registry = DatasourceRegistry().register(
+    RuntimeDatasourceRegistration(
+        name="primary",
+        kind="ClickHouseDatasource",
+        adapter=ClickHouseAdapter(config),
+        config=config,
+    )
+)
+
+runtime = OpenPlaitRuntime(registry, default_timeout_ms=30_000)
+```
+
+  </LangTab>
+</LangTabs>
+
+## Define a portable query
+
+The Query IR is shared (`apiVersion: openplait.io/v1alpha1`). TypeScript uses
+typed objects; Python accepts the same document shape via `parse_query`.
+
+<LangTabs ariaLabel="Define query language">
+  <LangTab label="TypeScript">
+
+```ts
+import {
+  OPENPLAIT_API_VERSION,
+  type SemanticQuery,
+} from "@openplait/core";
+
+export const query: SemanticQuery = {
+  apiVersion: OPENPLAIT_API_VERSION,
+  kind: "Query",
+  metadata: { name: "requests-by-service" },
+  spec: {
+    mode: "semantic",
+    datasource: { kind: "ClickHouseDatasource", name: "primary" },
+    input: { signal: "traces", entity: "otel.spans" },
+    timeRange: {
+      field: "timestamp",
+      from: "${__from}",
+      to: "${__to}",
+    },
+    select: [
+      { field: "service.name", as: "service" },
+      { aggregate: { function: "count" }, as: "requests" },
+    ],
+    groupBy: [{ field: "service.name" }],
+    orderBy: [{ field: "requests", direction: "desc" }],
+    limit: 20,
+  },
+};
+```
+
+  </LangTab>
+  <LangTab label="Python">
+
+```python
+from openplait import OPENPLAIT_API_VERSION
+from openplait.core import parse_query, validate_query
+
+query = parse_query(
+    {
+        "apiVersion": OPENPLAIT_API_VERSION,
+        "kind": "Query",
+        "metadata": {"name": "requests-by-service"},
+        "spec": {
+            "mode": "semantic",
+            "datasource": {"kind": "ClickHouseDatasource", "name": "primary"},
+            "input": {"signal": "traces", "entity": "otel.spans"},
+            "timeRange": {
+                "field": "timestamp",
+                "from": "${__from}",
+                "to": "${__to}",
+            },
+            "select": [
+                {"field": "service.name", "as": "service"},
+                {"aggregate": {"function": "count"}, "as": "requests"},
+            ],
+            "groupBy": [{"field": "service.name"}],
+            "orderBy": [{"field": "requests", "direction": "desc"}],
+            "limit": 20,
+        },
+    }
+)
+assert validate_query(query).valid
+```
+
+  </LangTab>
+</LangTabs>
+
+## Execute
+
+<LangTabs ariaLabel="Execute query language">
+  <LangTab label="TypeScript">
+
+```ts
+const response = await runtime.execute({
+  queries: [query],
+  variables: {
+    __from: "2026-08-05T00:00:00.000Z",
+    __to: "2026-08-05T01:00:00.000Z",
+  },
+  audit: {
+    requestId: "dashboard-7b9b4d",
+    actorId: "user-42",
+    tenantId: "workspace-a",
+  },
+});
+
+for (const frame of response.result.frames) {
+  console.log(frame.name, frame.length, frame.fields);
+}
+```
+
+  </LangTab>
+  <LangTab label="Python">
+
+```python
+import asyncio
+
+async def main() -> None:
+    # Full ClickHouse execute is still scaffolding on Python —
+    # validate + register today; prefer @openplait/* for production reads.
+    result = validate_query(query)
+    assert result.valid
+    print(query.metadata.name, query.spec.datasource.name)
+
+asyncio.run(main())
+```
+
+When Python adapter execute lands, the call shape mirrors TypeScript:
+
+```python
+result = await runtime.execute(
+    query,
+    variables={
+        "__from": "2026-08-05T00:00:00.000Z",
+        "__to": "2026-08-05T01:00:00.000Z",
+    },
+)
+for frame in result.frames:
+    print(frame.name, frame.length, frame.fields)
+```
+
+  </LangTab>
+</LangTabs>
+
+Every adapter returns the same typed, columnar dataframe shape. Continue with
+[Core Concepts](/concepts/architecture), or configure [ClickHouse](/adapters/clickhouse)
+and [Tempo](/adapters/tempo) in detail.

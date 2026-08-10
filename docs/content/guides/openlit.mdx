@@ -1,0 +1,102 @@
+---
+title: OpenLIT Integration
+description: How OpenLIT uses @openplait adapters behind Connectors, Database Config, and signal routing.
+---
+
+# OpenLIT Integration
+
+OpenLIT is an initial consumer of OpenPlait, not a dependency of the core
+contract. In OpenLIT, adapters are wired through **project-scoped** resources:
+
+1. Create/select a **project**
+2. Add a **Database Config** (ClickHouse) and/or **connectors** on that project
+3. Bind signals per environment
+
+Product docs (Mintlify):
+
+- [Projects](https://docs.openlit.io/latest/openlit/organisation/projects) — owns Database Configs and connectors
+- [Database Config](https://docs.openlit.io/latest/openlit/organisation/database-config) — ClickHouse on the project
+- [Connectors](https://docs.openlit.io/latest/openlit/organisation/connectors) — Tempo, Loki, Prometheus, Jaeger
+- [Signal routing](https://docs.openlit.io/latest/openlit/organisation/signal-routing) — per-signal bindings
+
+![OpenLIT projects own Database Config](/images/projects-list.png)
+
+## npm packages OpenLIT incorporates
+
+```bash
+npm install @openplait/core \
+  @openplait/adapter-sdk \
+  @openplait/adapter-clickhouse \
+  @openplait/adapter-tempo \
+  @openplait/adapter-loki \
+  @openplait/adapter-prometheus \
+  @openplait/adapter-jaeger \
+  @openplait/runtime
+```
+
+| OpenLIT connector | OpenPlait package |
+| --- | --- |
+| ClickHouse (Database Config) | `@openplait/adapter-clickhouse` + runtime |
+| Grafana Tempo | `@openplait/adapter-tempo` |
+| Grafana Loki | `@openplait/adapter-loki` |
+| Prometheus | `@openplait/adapter-prometheus` |
+| Jaeger | `@openplait/adapter-jaeger` |
+| Query planning / multi-query | `@openplait/runtime` |
+
+See [PUBLISHING.md](https://github.com/openlit/openplait/blob/main/PUBLISHING.md) for releasing `@openplait/*` on npm.
+
+## ClickHouse / Database Config
+
+OpenLIT builds a shared `OpenPlaitRuntime` from the **active Database Config**
+(not from live `INIT_DB_*` env vars after seed) and OpenLIT dataset mappings.
+Telemetry, rules, evaluations, dashboards, and analysis submit portable queries
+against that runtime. Derived intelligence always stays on ClickHouse even when
+raw traces/logs/metrics are rebound to external connectors.
+
+## Tempo
+
+OpenLIT's Tempo connector delegates to `@openplait/adapter-tempo`:
+
+- bounded TraceQL trace search
+- full trace-by-ID retrieval and OTLP span normalization
+- span lookup through search + detail retrieval
+- Tempo v2 tag-value and service discovery
+
+OpenLIT retains vault secrets, tenant/project checks, SSRF-safe HTTP transport,
+caching, concurrency limits, and product-specific TraceQL metrics aggregation.
+
+```ts
+const openPlaitTempo = new TempoAdapter(
+  {
+    url: descriptor.settings.url,
+    httpHeaders: resolvedAuthHeaders,
+    allowNativeQueries: true,
+    maxResultRows: 200,
+    maxTimeRangeMs: THIRTY_ONE_DAYS,
+  },
+  { fetch: openLitGuardedFetch },
+);
+```
+
+The selected **traces** binding supplies the Tempo URL and credentials.
+Choosing a different Tempo connector constructs a different adapter; OpenLIT
+does not silently fall back to ClickHouse unless resolution order reaches the
+built-in Database Config.
+
+## Loki, Prometheus, and Jaeger
+
+- **Loki** (`@openplait/adapter-loki`) — LogQL reads for the **logs** binding.
+- **Prometheus / Mimir** (`@openplait/adapter-prometheus`) — PromQL for the
+  **metrics** binding.
+- **Jaeger** (`@openplait/adapter-jaeger`) — service-scoped Query HTTP search for
+  the **traces** binding; OpenLIT keeps AI-selector filtering and in-process
+  aggregates on top.
+
+Signal routing in OpenLIT decides which connector (hence which adapter instance)
+serves each signal for a project environment.
+
+## Security boundary
+
+Credentials never live inside OpenPlait packages. OpenLIT resolves vault secrets
+server-side, injects headers into adapter config, and enforces endpoint allowlists
+before `fetch` reaches the vendor.

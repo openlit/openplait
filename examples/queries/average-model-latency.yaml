@@ -1,0 +1,43 @@
+apiVersion: openplait.io/v1alpha1
+kind: Query
+metadata:
+  name: average-model-latency
+  displayName: Average model latency
+  labels:
+    product: openlit
+spec:
+  mode: semantic
+  datasource:
+    kind: ClickHouseDatasource
+    name: openlit-clickhouse
+    scope: dashboard
+  input:
+    signal: traces
+    entity: otel.spans
+  timeRange:
+    field: timestamp
+    from: ${__from}
+    to: ${__to}
+  select:
+    - field: gen_ai.request.model
+      as: model
+    - aggregate:
+        function: avg
+        field: duration
+      as: average_latency
+  where:
+    and:
+      - field: service.name
+        operator: equals
+        value: ${service}
+      - field: status.code
+        operator: notEquals
+        value: ERROR
+  groupBy:
+    - field: gen_ai.request.model
+  orderBy:
+    - field: average_latency
+      direction: desc
+  limit: 20
+  parameters:
+    service: checkout

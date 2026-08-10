@@ -1,0 +1,32 @@
+apiVersion: openplait.io/v1alpha1
+kind: Query
+metadata:
+  name: recent-tempo-errors
+spec:
+  mode: semantic
+  datasource:
+    kind: TempoDatasource
+    name: traces
+  input:
+    signal: traces
+    entity: tempo.trace_search
+  timeRange:
+    field: timestamp
+    from: ${__from}
+    to: ${__to}
+  select:
+    - field: trace.id
+    - field: timestamp
+    - field: duration
+    - field: root.service.name
+      as: service
+    - field: root.span.name
+      as: operation
+  where:
+    field: status.code
+    operator: equals
+    value: error
+  orderBy:
+    - field: timestamp
+      direction: desc
+  limit: 100
