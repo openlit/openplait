@@ -1,6 +1,6 @@
 {
   "name": "openplait-docs",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.0",
   "private": true,
   "description": "OpenPlait documentation site",
   "homepage": "https://github.com/openlit/openplait/tree/main/docs",

@@ -19,7 +19,7 @@ and mirrors the TypeScript workspace under [`typescript/`](https://github.com/op
 | `openplait.adapters.prometheus` | `@openplait/adapter-prometheus` |
 | `openplait.adapters.jaeger` | `@openplait/adapter-jaeger` |
 
-Status: **alpha**. Config validation, capabilities, runtime registration, and
+Status: **1.0.0**. Config validation, capabilities, runtime registration, and
 **native execute** work for all five shipped connectors. TypeScript remains the
 reference for full semantic compile parity (ClickHouse SQL compiler, Tempo
 attribute mapping, etc.).
@@ -231,9 +231,9 @@ const result = await runtime.execute({
 
 ```bash
 cd python
-poetry version 0.1.0a0   # bump as needed
-git tag py-0.1.0a0
-git push origin py-0.1.0a0
+poetry version 1.0.0   # bump as needed
+git tag py-1.0.0
+git push origin py-1.0.0
 ```
 
 See [PUBLISHING.md](https://github.com/openlit/openplait/blob/main/PUBLISHING.md).

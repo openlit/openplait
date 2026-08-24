@@ -1,6 +1,6 @@
 {
   "name": "@openplait/adapter-clickhouse",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.0",
   "description": "ClickHouse datasource adapter for OpenPlait and OpenLIT telemetry schemas.",
   "type": "module",
   "sideEffects": false,
@@ -29,8 +29,8 @@
   },
   "dependencies": {
     "@clickhouse/client": "^1.23.1",
-    "@openplait/adapter-sdk": "0.1.0-alpha.0",
-    "@openplait/core": "0.1.0-alpha.0"
+    "@openplait/adapter-sdk": "1.0.0",
+    "@openplait/core": "1.0.0"
   },
   "devDependencies": {
     "typescript": "^5.9.0",

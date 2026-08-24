@@ -1,7 +1,6 @@
 # Governance
 
-OpenPlait uses a maintainer-led, consensus-seeking governance model during its
-alpha phase.
+OpenPlait uses a maintainer-led, consensus-seeking governance model.
 
 Maintainers steward releases, schemas, compatibility promises, and repository
 access. Decisions should be made in public issues or RFC pull requests. When

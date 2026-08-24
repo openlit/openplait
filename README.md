@@ -28,8 +28,8 @@ cd openplait
 | **SSH** | `git@github.com:openlit/openplait.git` |
 | **HTTPS** | `https://github.com/openlit/openplait.git` |
 | **API** | `openplait.io/v1alpha1` |
-| **npm** | `@openplait/*` · `0.1.0-alpha.0` |
-| **PyPI** | `openplait` · `0.1.0a0` |
+| **npm** | `@openplait/*` · `1.0.0` |
+| **PyPI** | `openplait` · `1.0.0` |
 
 ---
 
@@ -38,7 +38,7 @@ cd openplait
 | Path | Role |
 | --- | --- |
 | [`typescript/`](./typescript) | npm workspaces — `@openplait/*` reference implementation |
-| [`python/`](./python) | Poetry package — `openplait` on PyPI (alpha) |
+| [`python/`](./python) | Poetry package — `openplait` on PyPI |
 | [`docs/`](./docs) | Documentation site |
 | [`brand/`](./brand) | Logo mark, wordmark, and concept art |
 | [`examples/`](./examples) | Portable query / dashboard examples |
@@ -47,7 +47,7 @@ cd openplait
 | Language | Status | Install |
 | --- | --- | --- |
 | **TypeScript / Node** | Implemented (`@openplait/*`) | `npm install @openplait/core @openplait/runtime …` |
-| **Python** | Adapters for all five connectors (`openplait`) | `pip install openplait` *(alpha)* |
+| **Python** | Adapters for all five connectors (`openplait`) | `pip install openplait` |
 
 ---
 
@@ -171,12 +171,12 @@ Tag-driven publishes for npm and PyPI:
 Details: [`PUBLISHING.md`](./PUBLISHING.md).
 
 ```sh
-# npm alpha
+# npm 1.0.0 (dist-tag latest)
 cd typescript
 VERSION=$(node -p "require('./packages/core/package.json').version")
 git tag "ts-${VERSION}" && git push origin "ts-${VERSION}"
 
-# PyPI alpha
+# PyPI 1.0.0
 cd python
 VERSION=$(poetry version -s)
 git tag "py-${VERSION}" && git push origin "py-${VERSION}"
@@ -196,8 +196,9 @@ Usage guidance: [Brand docs](./docs/content/brand.mdx).
 
 ## Project status
 
-OpenPlait is **pre-release**. The `v1alpha1` API may evolve. See
-[`GOVERNANCE.md`](./GOVERNANCE.md) and [`SECURITY.md`](./SECURITY.md).
+OpenPlait **1.0.0** is the first stable package release. The portable Query IR
+still uses `apiVersion: openplait.io/v1alpha1`. See [`GOVERNANCE.md`](./GOVERNANCE.md)
+and [`SECURITY.md`](./SECURITY.md).
 
 ## License
 

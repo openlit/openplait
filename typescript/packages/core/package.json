@@ -1,6 +1,6 @@
 {
   "name": "@openplait/core",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.0",
   "description": "Portable OpenPlait resource types, schemas, validation, and serialization.",
   "type": "module",
   "sideEffects": false,

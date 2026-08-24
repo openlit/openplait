@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "openplait"
-version = "0.1.0a0"
+version = "1.0.0"
 description = "Datasource-independent interoperability layer for analytics and observability (Python port of OpenPlait)."
 authors = ["OpenLIT"]
 license = "Apache-2.0"

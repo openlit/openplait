@@ -4,7 +4,7 @@ Python port of [OpenPlait](https://github.com/openlit/openplait) — a
 datasource-independent query and dataframe layer for analytics and
 observability applications.
 
-Status: **alpha**. Ships `core`, `adapter_sdk`, `runtime`, and adapters for
+Status: **1.0.0**. Ships `core`, `adapter_sdk`, `runtime`, and adapters for
 **ClickHouse, Tempo, Loki, Prometheus, and Jaeger** (native execute first;
 TypeScript remains the semantic-compile reference).
 

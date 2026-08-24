@@ -1,6 +1,7 @@
 # Security policy
 
-OpenPlait is pre-release and does not yet publish supported release lines.
+OpenPlait 1.0.0 is the current stable package line. The portable Query IR
+remains `openplait.io/v1alpha1`.
 
 Please report suspected vulnerabilities privately to the OpenLIT maintainers
 through the security-reporting channel listed in the parent OpenLIT project. Do

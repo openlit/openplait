@@ -1,6 +1,6 @@
 {
   "name": "@openplait/perses",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.0",
   "description": "Perses dashboard compatibility and renderer bindings for OpenPlait.",
   "type": "module",
   "sideEffects": false,
@@ -28,7 +28,7 @@
     "node": ">=20.19"
   },
   "dependencies": {
-    "@openplait/core": "0.1.0-alpha.0"
+    "@openplait/core": "1.0.0"
   },
   "devDependencies": {
     "typescript": "^5.9.0",

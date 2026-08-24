@@ -10,8 +10,8 @@ OpenPlait ships two language tracks:
 | TypeScript | [`typescript/`](./typescript) | `@openplait/*` on npm | `ts-*.*.*` | [`.github/workflows/npm-release.yml`](./.github/workflows/npm-release.yml) | [Trusted publishing (OIDC)](https://docs.npmjs.com/trusted-publishers) — no `NPM_TOKEN` |
 | Python | [`python/`](./python) | `openplait` on PyPI | `py-*.*.*` | [`.github/workflows/pypi-release.yml`](./.github/workflows/pypi-release.yml) | `PYPI_API_TOKEN` |
 
-Current TypeScript line: **`0.1.0-alpha.0`** (npm dist-tag `alpha`).  
-Current Python line: **`0.1.0a0`** (PyPI pre-release).
+Current TypeScript line: **`1.0.0`** (npm dist-tag `latest`).  
+Current Python line: **`1.0.0`**.
 
 The private workspace root is `typescript/` (package name `openplait`, not published).
 
@@ -76,7 +76,7 @@ tar -tzf openplait-core-*.tgz | head
 
 ```sh
 cd typescript
-npm publish -w @openplait/core --access public --tag alpha --otp=<code>
+npm publish -w @openplait/core --access public --tag latest --otp=<code>
 # …repeat in publish order, or rely on CI after trusted publishers are configured
 ```
 
@@ -99,22 +99,23 @@ git push origin "ts-${VERSION}"
    - `npm ci` → `npm run check` → `npm run build`
    - `npm publish -w <pkg> --access public --tag <dist-tag>` via OIDC
 
-Default dist-tag for CI is **`alpha`** until you cut a stable `latest` via
-`workflow_dispatch` input.
+Default dist-tag for CI is **`latest`** on stable tags (`ts-1.0.0`).
+Pre-release versions (`alpha` / `beta` / `rc` in the tag) still publish to
+`alpha`. Override with `workflow_dispatch` input when needed.
 
 ### Consuming from OpenLIT
 
 ```json
 {
   "dependencies": {
-    "@openplait/core": "0.1.0-alpha.0",
-    "@openplait/adapter-sdk": "0.1.0-alpha.0",
-    "@openplait/adapter-clickhouse": "0.1.0-alpha.0",
-    "@openplait/adapter-tempo": "0.1.0-alpha.0",
-    "@openplait/adapter-loki": "0.1.0-alpha.0",
-    "@openplait/adapter-prometheus": "0.1.0-alpha.0",
-    "@openplait/adapter-jaeger": "0.1.0-alpha.0",
-    "@openplait/runtime": "0.1.0-alpha.0"
+    "@openplait/core": "1.0.0",
+    "@openplait/adapter-sdk": "1.0.0",
+    "@openplait/adapter-clickhouse": "1.0.0",
+    "@openplait/adapter-tempo": "1.0.0",
+    "@openplait/adapter-loki": "1.0.0",
+    "@openplait/adapter-prometheus": "1.0.0",
+    "@openplait/adapter-jaeger": "1.0.0",
+    "@openplait/runtime": "1.0.0"
   }
 }
 ```
@@ -144,7 +145,7 @@ pip install twine && twine check dist/*
 
 ### CI publish (OpenLIT-style)
 
-1. Bump `[tool.poetry].version` in `python/pyproject.toml` (PEP 440, e.g. `0.1.0a0`).
+1. Bump `[tool.poetry].version` in `python/pyproject.toml` (PEP 440, e.g. `1.0.0`).
 2. Tag and push:
 
 ```sh
@@ -162,6 +163,6 @@ git push origin "py-${VERSION}"
 ## Versioning policy
 
 - Keep TypeScript workspace versions **identical** across `@openplait/*`.
-- Align Python `0.1.0a0` with TS `0.1.0-alpha.0` conceptually (PEP 440 vs semver prerelease).
+- Align Python `1.0.0` with TS `1.0.0` (PEP 440 vs semver).
 - Patch: bugfixes only. Minor: additive. Breaking portable IR → new `apiVersion`.
 - Do not publish the private `typescript/` workspace root package.
