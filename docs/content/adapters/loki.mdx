@@ -1,13 +1,20 @@
 ---
 title: Grafana Loki Adapter
-description: Query Loki logs through bounded semantic LogQL or native LogQL.
+description: Query Loki logs through bounded semantic LogQL or native LogQL — TypeScript and Python.
 ---
 
 # Grafana Loki Adapter
 
-`@openplait/adapter-loki` maps portable log filters to Loki stream selectors
-and line filters. Results are normalized to `timestamp`, `body`, and `labels`
-fields, so consumers never depend on Loki's stream response shape.
+Maps portable log filters to Loki stream selectors and line filters. Results are
+normalized to `timestamp`, `body`, and `labels` fields.
+
+- **TypeScript:** `@openplait/adapter-loki` — semantic + native LogQL
+- **Python:** `openplait.adapters.LokiAdapter` — native LogQL `query_range`
+
+## Configure
+
+<LangTabs ariaLabel="Configure Loki language">
+  <LangTab label="TypeScript">
 
 ```ts
 import { LokiAdapter } from "@openplait/adapter-loki";
@@ -20,7 +27,30 @@ const adapter = new LokiAdapter({
 });
 ```
 
+  </LangTab>
+  <LangTab label="Python">
+
+```python
+from openplait.adapters import LokiAdapter, LokiConfig
+
+adapter = LokiAdapter(
+    LokiConfig(
+        url="http://localhost:3100",
+        tenant_id="tenant-a",
+        allow_native_queries=True,
+    )
+)
+```
+
+  </LangTab>
+</LangTabs>
+
+## Native LogQL
+
 Native LogQL must include an explicit range in its namespaced extension:
+
+<LangTabs ariaLabel="Native Loki query language">
+  <LangTab label="TypeScript">
 
 ```ts
 const query = {
@@ -30,7 +60,10 @@ const query = {
   spec: {
     mode: "native",
     datasource: { kind: "LokiDatasource", name: "logs" },
-    native: { language: "logql", statement: '{service_name="checkout"} |= "failed"' },
+    native: {
+      language: "logql",
+      statement: '{service_name="checkout"} |= "failed"',
+    },
     extensions: {
       "io.openplait.loki": {
         timeRange: { from: "2026-08-05T00:00:00Z", to: "2026-08-05T01:00:00Z" },
@@ -42,5 +75,43 @@ const query = {
 };
 ```
 
-Use `labelNames()` and `labelValues()` to populate filter controls. Basic,
-Bearer, static headers, and `X-Scope-OrgID` tenant authentication are supported.
+  </LangTab>
+  <LangTab label="Python">
+
+```python
+from openplait import OPENPLAIT_API_VERSION
+from openplait.core import parse_query
+
+query = parse_query(
+    {
+        "apiVersion": OPENPLAIT_API_VERSION,
+        "kind": "Query",
+        "metadata": {"name": "application-errors"},
+        "spec": {
+            "mode": "native",
+            "datasource": {"kind": "LokiDatasource", "name": "logs"},
+            "native": {
+                "language": "logql",
+                "statement": '{service_name="checkout"} |= "failed"',
+            },
+            "extensions": {
+                "io.openplait.loki": {
+                    "timeRange": {
+                        "from": "2026-08-05T00:00:00Z",
+                        "to": "2026-08-05T01:00:00Z",
+                    },
+                    "limit": 500,
+                    "direction": "backward",
+                }
+            },
+        },
+    }
+)
+```
+
+  </LangTab>
+</LangTabs>
+
+Basic, Bearer, static headers, and `X-Scope-OrgID` tenant authentication are
+supported. TypeScript also exposes `labelNames()` / `labelValues()` for filter
+controls.

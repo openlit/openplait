@@ -1,14 +1,19 @@
 ---
 title: Grafana Tempo Adapter
-description: Run bounded semantic and native TraceQL, retrieve full traces, and discover tags.
+description: Run bounded TraceQL search and retrieve traces — TypeScript and Python.
 ---
 
 # Grafana Tempo Adapter
 
-`@openplait/adapter-tempo` is a generic Tempo adapter. It has no OpenLIT-specific
-field assumptions; applications can add canonical attribute mappings.
+Generic Tempo adapter with no product-specific field assumptions.
+
+- **TypeScript:** `@openplait/adapter-tempo` — semantic + TraceQL, version inspect
+- **Python:** `openplait.adapters.TempoAdapter` — native TraceQL `/api/search`
 
 ## Configure
+
+<LangTabs ariaLabel="Configure Tempo language">
+  <LangTab label="TypeScript">
 
 ```ts
 import { TempoAdapter } from "@openplait/adapter-tempo";
@@ -19,138 +24,96 @@ const adapter = new TempoAdapter({
   bearerToken: process.env.TEMPO_TOKEN,
   maxResultRows: 1_000,
   maxTimeRangeMs: 7 * 24 * 60 * 60 * 1_000,
-  // Optional when the host already knows it. Otherwise inspect the server.
   tempoVersion: "2.8.2",
-  attributeFields: {
-    "deployment.environment": {
-      scope: "resource",
-      attribute: "deployment.environment.name",
-      type: "string",
-    },
-    "gen_ai.request.model": {
-      scope: "span",
-      attribute: "gen_ai.request.model",
-      type: "string",
-    },
-  },
 });
 ```
 
-Authentication options are bearer token, a username/password pair, or custom
-HTTP headers. `tenantId` is sent as Tempo's `X-Scope-OrgID` header.
+  </LangTab>
+  <LangTab label="Python">
 
-## Detect version-sensitive capabilities
+```python
+import os
+from openplait.adapters import TempoAdapter, TempoConfig
 
-Tempo features are not uniform across releases and deployments. In particular,
-the experimental `most_recent` hint starts in Tempo 2.8, TraceQL metrics can be
-disabled, and older servers use v1 tag discovery endpoints. Inspect the actual
-server during connection health checking:
-
-```ts
-const profile = await adapter.inspectServer({ timeoutMs: 8_000 });
-
-console.log(profile.version);
-console.log(profile.features.mostRecent);
-console.log(profile.features.traceqlMetrics);
-console.log(profile.features.tagSearchV2);
+adapter = TempoAdapter(
+    TempoConfig(
+        url="https://tempo.example.com",
+        tenant_id="tenant-a",
+        bearer_token=os.environ.get("TEMPO_TOKEN"),
+        allow_native_queries=True,
+        max_result_rows=1_000,
+    )
+)
 ```
 
-Unknown versions are handled conservatively: semantic compilation does not add
-experimental query hints. Set `enableMostRecent` only as an explicit operator
-override. `getCapabilities()` also exposes the profile under the namespaced
-`io.openplait.tempo` extension and reports only limits known from configuration.
+  </LangTab>
+</LangTabs>
 
-## Semantic trace search
+Authentication options are bearer token, username/password, or custom HTTP
+headers. `tenantId` / `tenant_id` is sent as Tempo's `X-Scope-OrgID` header.
 
-Search uses signal `traces` and dataset `tempo.trace_search`:
+## Native TraceQL
+
+<LangTabs ariaLabel="Native Tempo query language">
+  <LangTab label="TypeScript">
 
 ```ts
-const traces = {
+const query = {
   apiVersion: "openplait.io/v1alpha1",
   kind: "Query",
-  metadata: { name: "slow-errors" },
+  metadata: { name: "checkout-traces" },
   spec: {
-    mode: "semantic",
-    datasource: { kind: "TempoDatasource", name: "tempo-prod" },
-    input: { signal: "traces", entity: "tempo.trace_search" },
-    timeRange: { field: "timestamp", from: "${__from}", to: "${__to}" },
-    select: [
-      { field: "trace.id" },
-      { field: "timestamp" },
-      { field: "duration" },
-      { field: "root.service.name", as: "service" },
-    ],
-    where: {
-      and: [
-        { field: "service.name", operator: "equals", value: "checkout" },
-        { field: "status.code", operator: "equals", value: "error" },
-      ],
+    mode: "native",
+    datasource: { kind: "TempoDatasource", name: "tempo" },
+    native: {
+      language: "traceql",
+      statement: '{ resource.service.name = "checkout" }',
     },
-    orderBy: [{ field: "timestamp", direction: "desc" }],
-    limit: 100,
+    extensions: {
+      "io.openplait.tempo": {
+        timeRange: { from: "2026-08-05T00:00:00Z", to: "2026-08-05T01:00:00Z" },
+        limit: 20,
+      },
+    },
   },
 };
 ```
 
-Search returns trace summaries. Span intrinsics and attributes are filter-only;
-retrieve a complete OTLP trace for span rows and events:
+  </LangTab>
+  <LangTab label="Python">
 
-```ts
-const result = await adapter.getTrace(
-  "0123456789abcdef0123456789abcdef",
-  { audit: { requestId: "trace-detail-31" } },
-);
+```python
+from openplait import OPENPLAIT_API_VERSION
+from openplait.core import parse_query
+
+query = parse_query(
+    {
+        "apiVersion": OPENPLAIT_API_VERSION,
+        "kind": "Query",
+        "metadata": {"name": "checkout-traces"},
+        "spec": {
+            "mode": "native",
+            "datasource": {"kind": "TempoDatasource", "name": "tempo"},
+            "native": {
+                "language": "traceql",
+                "statement": '{ resource.service.name = "checkout" }',
+            },
+            "extensions": {
+                "io.openplait.tempo": {
+                    "timeRange": {
+                        "from": "2026-08-05T00:00:00Z",
+                        "to": "2026-08-05T01:00:00Z",
+                    },
+                    "limit": 20,
+                }
+            },
+        },
+    }
+)
 ```
 
-## Tag discovery
+  </LangTab>
+</LangTabs>
 
-```ts
-const tags = await adapter.discoverTags("resource", {});
-const services = await adapter.discoverTagValues(
-  "resource.service.name",
-  {},
-  {
-    query: '{ span:status = error }',
-    range: { from: fromIso, to: toIso },
-  },
-);
-```
-
-Both methods prefer Tempo v2 discovery endpoints, normalize response variants,
-and fall back to the legacy v1 endpoints when an unpinned server returns 400 or
-404. Pinning `enableTagSearchV2: true` disables that compatibility retry.
-
-## TraceQL metrics
-
-TraceQL metrics use a distinct endpoint and usually have a smaller time-window
-ceiling than trace search. `queryMetrics()` keeps execution, authentication,
-auditing, error handling, and dataframe normalization inside OpenPlait:
-
-```ts
-const metrics = await adapter.queryMetrics(
-  {
-    query: '{} | count_over_time() by (resource.service.name)',
-    from: fromIso,
-    to: toIso,
-    step: "5m",
-  },
-  { audit: { requestId: "tempo-metrics-42" } },
-);
-```
-
-The host should split ranges according to its deployed metrics limit and merge
-samples by label set and timestamp. OpenLIT uses 24-hour chunks by default.
-
-## Actionable errors
-
-Non-success responses throw `AdapterError`. Its `details` contain the status,
-truncated upstream body, endpoint path, query length, parameter names, and
-request IDs. The complete URL and authorization headers are deliberately not
-included. Log these structured details when debugging a 400; do not retry by
-removing required filters.
-
-## Native TraceQL
-
-Enable `allowNativeQueries` only for trusted server-side callers. Native
-queries must include the `io.openplait.tempo` extension with explicit bounds,
-limit, and spans-per-span-set settings. See [Native Queries](/guides/native-queries).
+TypeScript also supports `inspectServer()`, semantic compile with attribute
+mappings, and TraceQL metrics when the Tempo version supports them.

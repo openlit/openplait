@@ -8,8 +8,8 @@ description: Configure safe semantic and native ClickHouse queries with OpenTele
 ClickHouse compiles semantic queries into parameterized, read-only SQL and
 normalizes JSON responses into dataframes.
 
-- **TypeScript:** `@openplait/adapter-clickhouse` (full reference)
-- **Python:** `openplait.adapters.ClickHouseAdapter` (config + capabilities scaffold)
+- **TypeScript:** `@openplait/adapter-clickhouse` — full semantic + native SQL
+- **Python:** `openplait.adapters.ClickHouseAdapter` — native SQL execute via HTTP
 
 ## Configure
 
@@ -45,12 +45,13 @@ adapter = ClickHouseAdapter(
         username=os.environ.get("CLICKHOUSE_USER"),
         password=os.environ.get("CLICKHOUSE_PASSWORD"),
         database="observability",
+        allow_native_queries=True,
     )
 )
 ```
 
-Python currently validates config and reports capabilities. Semantic
-compile/execute parity with TypeScript is on the roadmap.
+Python executes **native SQL** (`mode=native`, `language=sql`) over ClickHouse
+HTTP (`JSONEachRow`). Semantic compile parity with TypeScript is on the roadmap.
 
   </LangTab>
 </LangTabs>
@@ -87,9 +88,8 @@ const adapter = new ClickHouseAdapter({
   <LangTab label="Python">
 
 ```python
-# OpenLIT dataset presets remain TypeScript-first for now.
-# Register ClickHouseConfig with your own table mappings once the Python
-# compile path lands; until then prefer @openplait/adapter-clickhouse.
+# Dataset allowlists for semantic compile remain TypeScript-first.
+# Native SQL execute works today via ClickHouseAdapter + mode=native.
 from openplait.adapters import ClickHouseAdapter, ClickHouseConfig
 
 adapter = ClickHouseAdapter(

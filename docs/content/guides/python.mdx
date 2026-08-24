@@ -13,11 +13,16 @@ and mirrors the TypeScript workspace under [`typescript/`](https://github.com/op
 | `openplait.core` | `@openplait/core` |
 | `openplait.adapter_sdk` | `@openplait/adapter-sdk` |
 | `openplait.runtime` | `@openplait/runtime` |
-| `openplait.adapters.clickhouse` | `@openplait/adapter-clickhouse` (scaffold) |
+| `openplait.adapters.clickhouse` | `@openplait/adapter-clickhouse` |
+| `openplait.adapters.tempo` | `@openplait/adapter-tempo` |
+| `openplait.adapters.loki` | `@openplait/adapter-loki` |
+| `openplait.adapters.prometheus` | `@openplait/adapter-prometheus` |
+| `openplait.adapters.jaeger` | `@openplait/adapter-jaeger` |
 
-Status: **alpha**. Query parse/validate and runtime registration work today.
-Full ClickHouse/Tempo/Loki/Prometheus/Jaeger execute ports track the Node
-reference adapters.
+Status: **alpha**. Config validation, capabilities, runtime registration, and
+**native execute** work for all five shipped connectors. TypeScript remains the
+reference for full semantic compile parity (ClickHouse SQL compiler, Tempo
+attribute mapping, etc.).
 
 ## Install
 
@@ -55,52 +60,71 @@ npm install @openplait/core @openplait/adapter-sdk \
   </LangTab>
 </LangTabs>
 
-## Register + validate a query
+## Register connectors
 
 Never put passwords or tokens in query documents — only in server-side config.
 
-<LangTabs ariaLabel="Register and validate language">
+<LangTabs ariaLabel="Register connectors language">
   <LangTab label="Python">
 
 ```python
-from openplait import OPENPLAIT_API_VERSION
-from openplait.adapters import ClickHouseAdapter, ClickHouseConfig
-from openplait.core import parse_query, validate_query
+from openplait.adapters import (
+    ClickHouseAdapter,
+    ClickHouseConfig,
+    JaegerAdapter,
+    JaegerConfig,
+    LokiAdapter,
+    LokiConfig,
+    PrometheusAdapter,
+    PrometheusConfig,
+    TempoAdapter,
+    TempoConfig,
+)
 from openplait.runtime import DatasourceRegistry, OpenPlaitRuntime
 from openplait.runtime.registry import RuntimeDatasourceRegistration
 
-config = ClickHouseConfig(
-    url="http://localhost:8123",
-    username="default",
-    password="OPENLIT",
-    database="openlit",
-)
-
-registry = DatasourceRegistry().register(
+registry = DatasourceRegistry()
+registry.register(
     RuntimeDatasourceRegistration(
         name="primary",
         kind="ClickHouseDatasource",
-        adapter=ClickHouseAdapter(config),
-        config=config,
+        adapter=ClickHouseAdapter(ClickHouseConfig(url="http://localhost:8123")),
+        config=ClickHouseConfig(url="http://localhost:8123", database="openlit"),
+    )
+)
+registry.register(
+    RuntimeDatasourceRegistration(
+        name="tempo",
+        kind="TempoDatasource",
+        adapter=TempoAdapter(TempoConfig(url="http://localhost:3200")),
+        config=TempoConfig(url="http://localhost:3200"),
+    )
+)
+registry.register(
+    RuntimeDatasourceRegistration(
+        name="logs",
+        kind="LokiDatasource",
+        adapter=LokiAdapter(LokiConfig(url="http://localhost:3100")),
+        config=LokiConfig(url="http://localhost:3100"),
+    )
+)
+registry.register(
+    RuntimeDatasourceRegistration(
+        name="metrics",
+        kind="PrometheusDatasource",
+        adapter=PrometheusAdapter(PrometheusConfig(url="http://localhost:9090")),
+        config=PrometheusConfig(url="http://localhost:9090"),
+    )
+)
+registry.register(
+    RuntimeDatasourceRegistration(
+        name="jaeger",
+        kind="JaegerDatasource",
+        adapter=JaegerAdapter(JaegerConfig(url="http://localhost:16686")),
+        config=JaegerConfig(url="http://localhost:16686"),
     )
 )
 runtime = OpenPlaitRuntime(registry)
-
-query = parse_query(
-    {
-        "apiVersion": OPENPLAIT_API_VERSION,
-        "kind": "Query",
-        "metadata": {"name": "spans-sample"},
-        "spec": {
-            "mode": "semantic",
-            "datasource": {"kind": "ClickHouseDatasource", "name": "primary"},
-            "input": {"signal": "traces", "entity": "otel.spans"},
-            "select": [{"field": "service.name"}],
-            "limit": 25,
-        },
-    }
-)
-assert validate_query(query).valid
 ```
 
   </LangTab>
@@ -108,50 +132,102 @@ assert validate_query(query).valid
 
 ```ts
 import { ClickHouseAdapter } from "@openplait/adapter-clickhouse";
-import {
-  OPENPLAIT_API_VERSION,
-  type SemanticQuery,
-} from "@openplait/core";
+import { TempoAdapter } from "@openplait/adapter-tempo";
+import { LokiAdapter } from "@openplait/adapter-loki";
+import { PrometheusAdapter } from "@openplait/adapter-prometheus";
+import { JaegerAdapter } from "@openplait/adapter-jaeger";
 import { DatasourceRegistry, OpenPlaitRuntime } from "@openplait/runtime";
 
-const config = {
-  url: "http://localhost:8123",
-  username: "default",
-  password: "OPENLIT",
-  database: "openlit",
-};
-
-const registry = new DatasourceRegistry().register({
-  name: "primary",
-  kind: "ClickHouseDatasource",
-  scope: "workspace",
-  config,
-  adapter: new ClickHouseAdapter(config),
-});
+const registry = new DatasourceRegistry()
+  .register({
+    name: "primary",
+    kind: "ClickHouseDatasource",
+    scope: "workspace",
+    config: { url: "http://localhost:8123" },
+    adapter: new ClickHouseAdapter({ url: "http://localhost:8123" }),
+  })
+  .register({
+    name: "tempo",
+    kind: "TempoDatasource",
+    scope: "workspace",
+    config: { url: "http://localhost:3200" },
+    adapter: new TempoAdapter({ url: "http://localhost:3200" }),
+  });
 
 const runtime = new OpenPlaitRuntime(registry);
+```
 
-const query: SemanticQuery = {
-  apiVersion: OPENPLAIT_API_VERSION,
+  </LangTab>
+</LangTabs>
+
+## Native execute example (Loki)
+
+<LangTabs ariaLabel="Native Loki language">
+  <LangTab label="Python">
+
+```python
+from openplait import OPENPLAIT_API_VERSION
+from openplait.core import parse_query
+
+query = parse_query(
+    {
+        "apiVersion": OPENPLAIT_API_VERSION,
+        "kind": "Query",
+        "metadata": {"name": "application-errors"},
+        "spec": {
+            "mode": "native",
+            "datasource": {"kind": "LokiDatasource", "name": "logs"},
+            "native": {
+                "language": "logql",
+                "statement": '{service_name="checkout"} |= "failed"',
+            },
+            "extensions": {
+                "io.openplait.loki": {
+                    "timeRange": {
+                        "from": "2026-08-05T00:00:00Z",
+                        "to": "2026-08-05T01:00:00Z",
+                    },
+                    "limit": 500,
+                }
+            },
+        },
+    }
+)
+result = await runtime.execute(query)
+```
+
+  </LangTab>
+  <LangTab label="TypeScript">
+
+```ts
+const result = await runtime.execute({
+  apiVersion: "openplait.io/v1alpha1",
   kind: "Query",
-  metadata: { name: "spans-sample" },
+  metadata: { name: "application-errors" },
   spec: {
-    mode: "semantic",
-    datasource: { kind: "ClickHouseDatasource", name: "primary" },
-    input: { signal: "traces", entity: "otel.spans" },
-    select: [{ field: "service.name" }],
-    limit: 25,
+    mode: "native",
+    datasource: { kind: "LokiDatasource", name: "logs" },
+    native: {
+      language: "logql",
+      statement: '{service_name="checkout"} |= "failed"',
+    },
+    extensions: {
+      "io.openplait.loki": {
+        timeRange: {
+          from: "2026-08-05T00:00:00Z",
+          to: "2026-08-05T01:00:00Z",
+        },
+        limit: 500,
+      },
+    },
   },
-};
+});
 ```
 
   </LangTab>
 </LangTabs>
 
 ## Release
-
-<LangTabs ariaLabel="Release language">
-  <LangTab label="Python">
 
 ```bash
 cd python
@@ -160,30 +236,17 @@ git tag py-0.1.0a0
 git push origin py-0.1.0a0
 ```
 
-  </LangTab>
-  <LangTab label="TypeScript">
-
-```bash
-cd typescript
-VERSION=$(node -p "require('./packages/core/package.json').version")
-git tag "ts-"
-git push origin "ts-"
-```
-
-  </LangTab>
-</LangTabs>
-
 See [PUBLISHING.md](https://github.com/openlit/openplait/blob/main/PUBLISHING.md).
 
 ## Roadmap
 
-1. Complete ClickHouse compile/execute parity with `@openplait/adapter-clickhouse`
-2. Port Tempo, Loki, Prometheus, and Jaeger adapters
-3. Frame transforms and alert evaluation parity with `@openplait/runtime`
-4. Keep `apiVersion` and JSON Schemas shared with TypeScript
+1. Semantic compile parity with TypeScript for ClickHouse, Tempo, Loki, Prometheus
+2. Frame transforms and alert evaluation parity with `@openplait/runtime`
+3. Keep `apiVersion` and JSON Schemas shared with TypeScript
 
 ## Related
 
-- [Getting started](/getting-started/) (tabs for both languages)
+- [Adapters overview](/adapters/overview/)
+- [Getting started](/getting-started/)
 - [TypeScript](/guides/typescript/)
 - [Agent Skills](/guides/agent-skills/)

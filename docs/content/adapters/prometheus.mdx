@@ -1,14 +1,21 @@
 ---
 title: Prometheus Adapter
-description: Query Prometheus-compatible metric APIs with semantic or native PromQL.
+description: Query Prometheus-compatible metric APIs with semantic or native PromQL — TypeScript and Python.
 ---
 
 # Prometheus Adapter
 
-`@openplait/adapter-prometheus` executes bounded `/api/v1/query_range`
-requests and normalizes matrix, vector, and scalar responses into timestamp,
-value, and label fields. The same adapter works with Prometheus-compatible
-query APIs such as Grafana Mimir.
+Executes bounded `/api/v1/query_range` requests and normalizes matrix, vector,
+and scalar responses into timestamp, value, and label fields. Works with
+Prometheus-compatible APIs such as Grafana Mimir.
+
+- **TypeScript:** `@openplait/adapter-prometheus` — semantic + native PromQL
+- **Python:** `openplait.adapters.PrometheusAdapter` — native PromQL `query_range`
+
+## Configure
+
+<LangTabs ariaLabel="Configure Prometheus language">
+  <LangTab label="TypeScript">
 
 ```ts
 import { PrometheusAdapter } from "@openplait/adapter-prometheus";
@@ -21,6 +28,29 @@ const adapter = new PrometheusAdapter({
 });
 ```
 
+  </LangTab>
+  <LangTab label="Python">
+
+```python
+from openplait.adapters import PrometheusAdapter, PrometheusConfig
+
+adapter = PrometheusAdapter(
+    PrometheusConfig(
+        url="http://localhost:9090",
+        allow_native_queries=True,
+        default_step="30s",
+    )
+)
+```
+
+  </LangTab>
+</LangTabs>
+
+## Native PromQL
+
+<LangTabs ariaLabel="Native Prometheus query language">
+  <LangTab label="TypeScript">
+
 ```ts
 const query = {
   apiVersion: "openplait.io/v1alpha1",
@@ -29,7 +59,10 @@ const query = {
   spec: {
     mode: "native",
     datasource: { kind: "PrometheusDatasource", name: "metrics" },
-    native: { language: "promql", statement: 'sum(rate(http_requests_total[5m])) by (service_name)' },
+    native: {
+      language: "promql",
+      statement: 'sum(rate(http_requests_total[5m])) by (service_name)',
+    },
     extensions: {
       "io.openplait.prometheus": {
         timeRange: { from: "2026-08-05T00:00:00Z", to: "2026-08-05T01:00:00Z" },
@@ -40,5 +73,41 @@ const query = {
 };
 ```
 
-Use `metricNames()`, `labelNames()`, and `labelValues()` for discovery-backed
-query editors. Authentication and tenant behavior is shared with Loki and Tempo.
+  </LangTab>
+  <LangTab label="Python">
+
+```python
+from openplait import OPENPLAIT_API_VERSION
+from openplait.core import parse_query
+
+query = parse_query(
+    {
+        "apiVersion": OPENPLAIT_API_VERSION,
+        "kind": "Query",
+        "metadata": {"name": "request-rate"},
+        "spec": {
+            "mode": "native",
+            "datasource": {"kind": "PrometheusDatasource", "name": "metrics"},
+            "native": {
+                "language": "promql",
+                "statement": 'sum(rate(http_requests_total[5m])) by (service_name)',
+            },
+            "extensions": {
+                "io.openplait.prometheus": {
+                    "timeRange": {
+                        "from": "2026-08-05T00:00:00Z",
+                        "to": "2026-08-05T01:00:00Z",
+                    },
+                    "step": "30s",
+                }
+            },
+        },
+    }
+)
+```
+
+  </LangTab>
+</LangTabs>
+
+TypeScript also exposes `metricNames()`, `labelNames()`, and `labelValues()` for
+discovery-backed editors.

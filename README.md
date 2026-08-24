@@ -47,7 +47,7 @@ cd openplait
 | Language | Status | Install |
 | --- | --- | --- |
 | **TypeScript / Node** | Implemented (`@openplait/*`) | `npm install @openplait/core @openplait/runtime …` |
-| **Python** | Scaffold (`openplait`) | `pip install openplait` *(alpha)* |
+| **Python** | Adapters for all five connectors (`openplait`) | `pip install openplait` *(alpha)* |
 
 ---
 

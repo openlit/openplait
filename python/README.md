@@ -4,10 +4,9 @@ Python port of [OpenPlait](https://github.com/openlit/openplait) — a
 datasource-independent query and dataframe layer for analytics and
 observability applications.
 
-Status: **alpha**. The TypeScript `@openplait/*` packages under
-[`../typescript`](../typescript) are the reference implementation. This package
-mirrors `core`, `adapter_sdk`, and `runtime` first; backend adapters land
-incrementally.
+Status: **alpha**. Ships `core`, `adapter_sdk`, `runtime`, and adapters for
+**ClickHouse, Tempo, Loki, Prometheus, and Jaeger** (native execute first;
+TypeScript remains the semantic-compile reference).
 
 ## Install
 
@@ -22,29 +21,20 @@ Requires **Python 3.9+**.
 ## Quick start
 
 ```python
-from openplait import OPENPLAIT_API_VERSION
-from openplait.core import parse_query, validate_query
+from openplait.adapters import LokiAdapter, LokiConfig
 from openplait.runtime import DatasourceRegistry, OpenPlaitRuntime
+from openplait.runtime.registry import RuntimeDatasourceRegistration
 
-document = {
-    "apiVersion": OPENPLAIT_API_VERSION,
-    "kind": "Query",
-    "metadata": {"name": "spans-sample"},
-    "spec": {
-        "mode": "semantic",
-        "datasource": {"kind": "ClickHouseDatasource", "name": "primary"},
-        "input": {"signal": "traces", "entity": "otel.spans"},
-        "select": [{"field": "service.name"}],
-        "limit": 25,
-    },
-}
-
-query = parse_query(document)
-assert validate_query(query).valid
-
-registry = DatasourceRegistry()
+config = LokiConfig(url="http://localhost:3100")
+registry = DatasourceRegistry().register(
+    RuntimeDatasourceRegistration(
+        name="logs",
+        kind="LokiDatasource",
+        adapter=LokiAdapter(config),
+        config=config,
+    )
+)
 runtime = OpenPlaitRuntime(registry)
-# Register adapters with secrets from your vault / env — never from the query IR.
 ```
 
 ## Layout
@@ -52,9 +42,13 @@ runtime = OpenPlaitRuntime(registry)
 | Module | Role |
 | --- | --- |
 | `openplait.core` | `openplait.io/v1alpha1` models, parse/validate |
-| `openplait.adapter_sdk` | Adapter protocols and errors |
+| `openplait.adapter_sdk` | Adapter protocol, errors, HTTP helpers |
 | `openplait.runtime` | Datasource registry + runtime orchestration |
-| `openplait.adapters` | Backend adapters (ClickHouse scaffold first) |
+| `openplait.adapters.clickhouse` | Native SQL via ClickHouse HTTP |
+| `openplait.adapters.tempo` | Native TraceQL search |
+| `openplait.adapters.loki` | Native LogQL `query_range` |
+| `openplait.adapters.prometheus` | Native PromQL `query_range` |
+| `openplait.adapters.jaeger` | Semantic Jaeger Query HTTP search |
 
 ## Release
 
